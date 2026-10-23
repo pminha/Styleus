@@ -1,12 +1,12 @@
 # Native pinch zoom feasibility
 
-Research date: 2026-10-23. This investigation follows the decision to investigate smooth zoom before considering a keyboard-shortcut fallback. It makes no change to Styleus input behavior, signing, system security, browser configuration or installed extensions.
+Research date: 2026-10-23. This investigation follows the decision to investigate smooth zoom before considering a keyboard-shortcut fallback. Initial public-API research was followed by an authorized, isolated Hammerspoon experiment. Hammerspoon's Accessibility permission was manually approved by the user. Production Styleus input behavior and signing remain unchanged; no driver, browser extension or shortcut fallback was added.
 
 ## Finding
 
-Recognizing a two-finger pinch on the iPad is straightforward. Delivering the equivalent of a native Mac trackpad magnification gesture to an arbitrary Mac app is the unresolved part. The public AppKit/Core Graphics APIs inspected here do not provide a supported magnification-event constructor. A virtual HID device is a separate, entitlement-gated architecture, and creating a generic touchpad does not establish that macOS will recognize native pinch gestures from it.
+An isolated experiment delivered phased native magnification events through Hammerspoon's undocumented event-construction route on macOS 26.5.2. A custom AppKit receiver, a standard `WKWebView` and a disposable page in Arc responded to those events. This establishes a viable experimental Mac output path for those test conditions; it does not establish physical iPad pinch behavior, visual smoothness, latency or compatibility with every app.
 
-There are supported continuous zoom APIs **inside an app that owns its content**. Browser-specific integrations may also offer a useful proof of concept. These have narrower compatibility and different setup requirements than system-wide trackpad emulation. No smooth zoom integration has been physically verified in Styleus, and no shortcut fallback has been implemented.
+The public AppKit/Core Graphics APIs inspected here still do not provide a supported magnification-event constructor. A virtual HID device is a separate, entitlement-gated architecture, and creating a generic touchpad does not establish that macOS will recognize native pinch gestures from it. Supported continuous zoom APIs also exist **inside an app that owns its content**. The user chose to keep the experiment only for now. Production pinch integration is deferred, and Styleus has no added Hammerspoon runtime dependency.
 
 ## iPad recognition and existing input safety
 
@@ -21,7 +21,7 @@ Any integration must arbitrate between scrolling and pinching before sending inp
 | Public AppKit/Core Graphics magnification event | AppKit exposes a read-only magnification value and responder methods; the inspected SDK has no public magnification `CGEventType`, field or constructor. | No supported system-wide construction route identified. |
 | CoreHID / `IOHIDUserDevice` | Virtual device creation requires an entitlement. HID reports describe contacts; macOS must still interpret those contacts as trackpad gestures. | Separate authorization and compatibility investigation, beyond the current free-signing workflow. |
 | HIDDriverKit event service | Public API dispatches digitizer touch data, within a DriverKit extension. | Requires a driver architecture and its signing/activation requirements; native pinch compatibility remains unproven. |
-| Undocumented serialized gesture events | An established open-source tool constructs private event payloads manually. | A possible unsupported experiment, with OS/app compatibility and licensing concerns; not a supported public-API solution. |
+| Undocumented serialized gesture events | Hammerspoon constructed events that were delivered and changed magnification in isolated AppKit, WebKit and Arc tests. | Experimentally viable for those cases, with OS/app compatibility and licensing limits; not a supported public-API solution or a physically tested Styleus feature. |
 
 ### AppKit and Core Graphics
 
@@ -29,7 +29,7 @@ Any integration must arbitrate between scrolling and pinching before sending inp
 
 [`CGEvent`](https://developer.apple.com/documentation/coregraphics/cgevent) supports public keyboard, mouse and scroll construction/posting. The installed macOS 26.5 SDK's `CGEvent.h`, `CGEventTypes.h` and `NSEvent.h` were inspected. Magnification is read-only in `NSEvent.h`, and there is no public Core Graphics magnification event declaration. This is an inspection finding, rather than proof that no undocumented system mechanism exists.
 
-**Local runtime probe:** on macOS 26.5.2, an Objective-C scratch program called the public `NSEvent` custom-event factory with `NSEventTypeMagnify`. The factory rejected it with `Invalid parameter not satisfying: _NSEventMask64FromType(type) & WeirdMask`. No events were posted. This is consistent with the documented purpose of [`otherEvent(...)`](https://developer.apple.com/documentation/appkit/nsevent/otherevent(with:location:modifierflags:timestamp:windownumber:context:subtype:data1:data2:)): creating custom events, rather than constructing magnification gestures. No undocumented numeric fields or private constructors were tested.
+**Initial local runtime probe:** on macOS 26.5.2, an Objective-C scratch program called the public `NSEvent` custom-event factory with `NSEventTypeMagnify`. The factory rejected it with `Invalid parameter not satisfying: _NSEventMask64FromType(type) & WeirdMask`. No events were posted by that probe. This is consistent with the documented purpose of [`otherEvent(...)`](https://developer.apple.com/documentation/appkit/nsevent/otherevent(with:location:modifierflags:timestamp:windownumber:context:subtype:data1:data2:)): creating custom events, rather than constructing magnification gestures. Undocumented construction was tested separately afterward, through Hammerspoon as described below.
 
 ### Virtual HID and DriverKit
 
@@ -51,7 +51,42 @@ Hammerspoon's [`newGesture` implementation](https://github.com/Hammerspoon/hamme
 
 Licensing needs component-level review: Hammerspoon's repository has a general [MIT license](https://github.com/Hammerspoon/hammerspoon/blob/master/LICENSE), while `TouchEvents.c` itself carries a 2010 Calf Trail copyright and an all-rights-reserved header, without an explicit license grant in that file. Its [`eventtap.lua` wrapper](https://github.com/Hammerspoon/hammerspoon/blob/master/extensions/eventtap/eventtap.lua) identifies `newGesture` as using Calf Trail's external Touch library and includes a GPL version 2-or-later notice for that library. The originating [Calf Trail Touch project](https://github.com/calftrail/Touch) also describes reverse-engineering work and GPLv2 licensing. No separate permission for the copy was established by this review; no conclusion that the repository-wide MIT license replaces the component notice should be assumed.
 
-Hammerspoon's [open compatibility issue](https://github.com/Hammerspoon/hammerspoon/issues/2902) reports the gesture working in Safari while failing in Chrome and Illustrator. That historical report is not a current compatibility test, but it prevents a universal-support claim. No third-party code was downloaded into Styleus, compiled, run or incorporated.
+Hammerspoon's [open compatibility issue](https://github.com/Hammerspoon/hammerspoon/issues/2902) reports the gesture working in Safari while failing in Chrome and Illustrator, without an established correction in the discussion. The local Arc experiment below provides narrower, current evidence that a full changed-phase sequence can work after Chromium's zoom threshold is crossed. Neither the historical report nor one successful browser test establishes universal compatibility.
+
+Hammerspoon was run as a separate application for the authorized experiment. Its third-party gesture implementation was not copied into Styleus or compiled into either native app. An optional external adapter would require a separate scope decision and preservation of the dependency's component notices; no such adapter has been integrated.
+
+## Isolated native event experiment
+
+The following tests ran on macOS 26.5.2 with Hammerspoon 1.1.1 after the user manually granted its Accessibility permission. The scratch timers were retained until their callbacks completed. Synthetic events were tagged to distinguish them from physical trackpad input; no account, device or process identifiers are needed to reproduce the findings. Scratch programs, local pages and CSV captures remain in ignored build output.
+
+| Test | Observed result | Established scope |
+| --- | --- | --- |
+| Pair posted directly to the disposable receiver process | No receiver rows. | The targeted posting path did not deliver the tested pair under these conditions. |
+| Pair posted through the session event stream | Receiver recorded `began` with zero magnification, then `ended` with `0.125`. | The session path delivered native magnify events to the receiver. |
+| Phased continuous sequence | Receiver recorded 32 tagged magnify events: one began, 30 changed and one ended. The custom receiver's final cumulative scale was approximately `1.0`. | Fractional changes and phase boundaries were delivered; the increase/decrease sequence returned to its starting scale. |
+| Cancellation | Receiver recorded a cancelled magnify phase. | Cancellation survived the tested event-construction and posting path. |
+| Standard WebKit view | With `allowsMagnification` enabled, 31 observations progressed from `1.0` through `1.253409879` to `1.046524970`. | Built-in WebKit magnification responded without a custom magnify handler or calls to `setMagnification`. |
+| Arc disposable local page | A larger monotonic sequence produced native Ctrl-wheel and viewport resize events; `visualViewport.scale` progressed from `1.0` to `1.298405886`. | The tested Arc page performed proportional visual zoom after the native threshold was crossed. |
+
+Hammerspoon's [`post` implementation](https://github.com/Hammerspoon/hammerspoon/blob/1.1.1/extensions/eventtap/libeventtap_event.m) uses different paths for a specified application and the session stream. It returns the event rather than a delivery acknowledgment; the receiving application and page telemetry supplied the evidence above. Its [`timer` implementation](https://github.com/Hammerspoon/hammerspoon/blob/1.1.1/extensions/timer/libtimer.m) stops a timer when its Lua object is garbage-collected, which is why callback retention was part of the experiment.
+
+The continuous test used Hammerspoon's gesture constructor for fractional magnification and the undocumented gesture-phase field `0x84` for began, changed, ended and cancelled values (`1`, `2`, `4`, `8`). The phase values correspond to public `CGGesturePhase` constants, but using them with this undocumented magnification field is experimental behavior derived from the [external constructor's implementation](https://github.com/Hammerspoon/hammerspoon/blob/1.1.1/extensions/eventtap/TouchEvents.c). Hammerspoon's named scroll-phase property is a different field and was not treated as an equivalent.
+
+### Chromium threshold and page handling
+
+The first small Arc sequence generated Ctrl-wheel events but did not change viewport scale. Chromium's [native pinch handler](https://github.com/chromium/chromium/blob/main/content/browser/renderer_host/render_widget_host_view_mac.mm) accumulates scale from `1.0` and disables zoom until that product is below `0.667` or above `1.5`. Its ordinary [AppKit entry point](https://github.com/chromium/chromium/blob/main/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm) does not mark an event as internally injected, so the threshold applies. The [event builder](https://github.com/chromium/chromium/blob/main/components/input/web_input_event_builders_mac.mm) converts each AppKit magnification to an incremental factor by adding `1.0`.
+
+The follow-up Arc sequence sent 30 incremental magnifications of `0.022` and crossed the threshold. The viewport then changed proportionally. The initial threshold consumes part of the input before zoom becomes active, so total sent scale must not be equated with final viewport scale.
+
+Chromium deliberately offers [cancellable Ctrl-wheel events before applying pinch zoom](https://chromium.googlesource.com/chromium/src/+/HEAD/content/browser/renderer_host/input/README.md). The disposable page's recorder used a passive listener and never called `preventDefault`. Browser or page behavior may still affect real websites; this local result is not a guarantee for all sites or Chromium versions.
+
+### Limits of the experiment
+
+- No physical iPad pinch input, gesture arbitration or end-to-end network behavior was tested.
+- Telemetry shows changing native scale values; visible smoothness, anchor behavior and latency were not measured.
+- Safari was attempted, but its telemetry was not isolated well enough to claim a pass or failure.
+- Zotero, Notability and the ChatGPT Mac app were not validated with this experimental native output path.
+- No driver, privileged helper, security relaxation, production input handler or shortcut fallback was added.
 
 ## Narrower smooth-zoom integrations
 
@@ -61,7 +96,7 @@ Hammerspoon's [open compatibility issue](https://github.com/Hammerspoon/hammersp
 
 AppKit's [`NSScrollView.setMagnification(_:centeredAt:)`](https://developer.apple.com/documentation/appkit/nsscrollview/setmagnification(_:centeredat:)) offers a similar supported route for an app's own document view. Neither API gives Styleus ownership of another process's view.
 
-**Local runtime probe:** on macOS 26.5.2, an invisible scratch `WKWebView` loaded generic local HTML with no network content. Calls centered at `(400, 300)` requested magnifications `1.000`, `1.013`, `1.027`, `1.041`, `1.068`, `1.040` and `1.020`; property readback matched each value within `0.00001`. This confirms that the public app-owned API accepts small proportional increases and decreases. It does not verify visible anchor behavior, animation smoothness, finger-to-screen latency, external-app control or a physical iPad gesture. No global input events were posted and no other apps were controlled.
+**Initial app-owned API probe:** on macOS 26.5.2, an invisible scratch `WKWebView` loaded generic local HTML with no network content. Calls centered at `(400, 300)` requested magnifications `1.000`, `1.013`, `1.027`, `1.041`, `1.068`, `1.040` and `1.020`; property readback matched each value within `0.00001`. This confirmed that the public app-owned API accepts small proportional increases and decreases. That initial probe posted no global input. The later event-delivery experiment above additionally exercised WebKit's built-in response to native magnify events; neither probe establishes physical iPad behavior or perceptual smoothness.
 
 ### Browser extension
 
@@ -85,11 +120,11 @@ Electron exposes [zoom-factor and visual-zoom APIs](https://www.electronjs.org/d
 
 No documented external zoom API for Notability was identified. Its [current desktop support information](https://support.gingerlabs.com/en-us/articles/16634098-notability-for-windows-and-mac) describes multiple distribution paths; compatibility must be checked for the actual app version, rather than inferred from another desktop edition.
 
-## Recommended next scope
+## Decision and conditions for future work
 
-1. The public WebKit magnification/readback proof has passed in an isolated local view. Any next app-owned prototype must additionally validate visible anchor behavior, continuous physical finger input, cancellation and rendering; the existing proof does not establish those results or external-app support.
-2. If zooming ordinary websites is the priority, review a browser-specific proof using documented browser control. Explain and obtain the extension/debugger approval before installation, then test continuous physical input. Do not call layout zoom or isolated scripted pinches native system-wide support.
-3. If Zotero is the priority, investigate a version-guarded reader plugin using a disposable document. Keep internal API dependence explicit.
+1. **Current decision: keep the experiment only.** Production pinch integration is deferred. No Hammerspoon dependency or external helper was added to Styleus, and existing Pencil and scrolling behavior remain unchanged.
+2. If the work is revisited, obtain agreement on the external dependency and undocumented event route before integration. Then implement and test physical two-finger recognition, scroll/pinch arbitration, palm rejection, session expiry, cancellation, focus changes and disconnect behavior. Use disposable content in each target app and verify the actual perceived zoom, rather than reporting only emitted values. Keep third-party constructor code outside the native app source.
+3. Validate Zotero and the user's other actual target apps individually. Consider browser- or reader-specific APIs only if the experimental native path fails a target's required behavior, with the additional setup and compatibility scope explained first.
 4. Treat virtual-HID/DriverKit work as a separate proposed scope with entitlement, signing and compatibility questions resolved before implementation. Do not enroll, pay, weaken system security or add a privileged helper to the current free app implicitly.
 
 The research establishes concrete platform boundaries and testable experiments. It does not establish universal pinch compatibility, low latency, or a completed zoom feature.
