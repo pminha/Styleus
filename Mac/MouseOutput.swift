@@ -4,6 +4,9 @@ import ApplicationServices
 final class MouseOutput {
     private let source = CGEventSource(stateID: .privateState)
     private var encoder = MouseEventEncoder()
+    private var zoomTarget: pid_t?
+    private var zoomAnchor = CGPoint.zero
+    var zoomAvailable: Bool { ZoomEventEncoder.available }
     var permitted: Bool { AXIsProcessTrusted() }
     var location: Point {
         let p = CGEvent(source: nil)?.location ?? .zero
@@ -28,12 +31,15 @@ final class MouseOutput {
             case .up: releasing = true
             case .scroll(let sample):
                 releasing = sample.phase == .ended || sample.phase == .cancelled || sample.phase == .momentumEnded
+            case .zoom(let sample): releasing = sample.phase == .ended || sample.phase == .cancelled
             default: releasing = false
             }
             // Attempt releases even if Accessibility has just been revoked.
             guard permitted || releasing,
                   let event = encoder.event(effect, source: source, modifiers: modifiers) else { continue }
-            if case .scroll(let sample) = effect {
+            if case .zoom(let sample) = effect {
+                postZoom(sample, event: event)
+            } else if case .scroll(let sample) = effect {
                 ScrollDiagnostics.shared.willPost(sample, event: event)
                 // Already scaled, phase-aware samples must bypass HID device
                 // filters, retaining the physically verified scroll delivery.
@@ -45,6 +51,30 @@ final class MouseOutput {
             }
         }
         return postedLocation
+    }
+
+    private func postZoom(_ sample: ZoomSample, event: CGEvent) {
+        guard zoomAvailable else { return }
+        let foreground = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        if sample.phase == .began {
+            guard let foreground else { return }
+            zoomTarget = foreground
+            zoomAnchor = CGEvent(source: nil)?.location ?? .zero
+        }
+        guard let target = zoomTarget else { return }
+        event.location = zoomAnchor
+        if foreground != target {
+            // Never continue a pinch into a different app after a focus change.
+            // Best-effort cancellation goes only to the original process.
+            if let cancel = ZoomEventEncoder.event(ZoomSample(phase: .cancelled), source: source) {
+                cancel.location = zoomAnchor
+                cancel.postToPid(target)
+            }
+            zoomTarget = nil
+            return
+        }
+        event.post(tap: .cgSessionEventTap)
+        if sample.phase == .ended || sample.phase == .cancelled { zoomTarget = nil }
     }
 }
 

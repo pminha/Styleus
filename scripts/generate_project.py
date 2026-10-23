@@ -47,6 +47,13 @@ for folder, name, product, sdk in [
         reference = obj("file:" + relative, isa="PBXFileReference", lastKnownFileType="folder.assetcatalog", path=relative, sourceTree="SOURCE_ROOT")
         refs.append(reference)
         resources.append(obj(name + ":resource:" + relative, isa="PBXBuildFile", fileRef=reference))
+    notices = ROOT / "THIRD_PARTY_NOTICES.md"
+    if notices.exists():
+        relative = notices.name
+        reference = obj("file:" + relative, isa="PBXFileReference", lastKnownFileType="text",
+                        path=relative, sourceTree="SOURCE_ROOT")
+        refs.append(reference)
+        resources.append(obj(name + ":resource:" + relative, isa="PBXBuildFile", fileRef=reference))
     refs.append(obj(name + ":plist", isa="PBXFileReference", lastKnownFileType="text.plist.xml", path=f"{folder}/Info.plist", sourceTree="SOURCE_ROOT"))
     groups.append(obj(name + ":group", isa="PBXGroup", name=name, children=refs, sourceTree="<group>"))
     product_ref = obj(name + ":product", isa="PBXFileReference", explicitFileType="wrapper.application", path=product + ".app", sourceTree="BUILT_PRODUCTS_DIR")

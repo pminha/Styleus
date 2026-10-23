@@ -56,6 +56,11 @@ final class MacModel: ObservableObject {
                 self?.stop("Mac interrupted. Start listening again when ready.")
             })
         }
+        workspaceObservers.append(NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
+                guard let self, self.engine.zoomActive else { return }
+                self.release()
+            })
         lockObserver = DistributedNotificationCenter.default().addObserver(forName: NSNotification.Name("com.apple.screenIsLocked"),
                                                                            object: nil, queue: .main) { [weak self] _ in self?.stop("Mac locked") }
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
@@ -200,6 +205,7 @@ final class MacModel: ObservableObject {
             guard self.output.permitted || packet.action == .heartbeat else {
                 self.release(); return
             }
+            if case .zoom = packet.action, !self.output.zoomAvailable { self.release(); return }
             self.engine.syncCursor(self.output.location)
             let postedLocation = self.output.post(self.engine.apply(packet.action))
             switch packet.action {
@@ -244,7 +250,8 @@ final class MacModel: ObservableObject {
         let lease = gate!.issueLease(now: ProcessInfo.processInfo.systemUptime)
         channel.send(.state(ServerState(session: gate!.session, lease: lease, geometry: geometry,
                                         target: target, dragActive: engine.dragActive,
-                                        acknowledgedSequence: gate!.lastSequence, inputAllowed: output.permitted)))
+                                        acknowledgedSequence: gate!.lastSequence, inputAllowed: output.permitted,
+                                        zoomAvailable: output.zoomAvailable)))
     }
 
     private func release() {

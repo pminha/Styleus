@@ -12,12 +12,13 @@ final class ProtocolTests: XCTestCase {
     }
 
     func testLegacyMacConfigurationCanReportVersionMismatchWithoutGrantingInput() throws {
-        for version in [1, 2, 3, 4, 5] {
+        for version in [1, 2, 3, 4, 5, 6] {
             guard case .state(let state) = try JSONDecoder().decode(WireMessage.self, from: configuration(version: version)) else {
                 return XCTFail("Expected a configuration envelope")
             }
             XCTAssertNotEqual(state.version, WireProtocol.version)
             XCTAssertFalse(state.inputAllowed)
+            XCTAssertFalse(state.zoomAvailable)
             XCTAssertEqual(state.acknowledgedSequence, 0)
         }
     }
@@ -26,7 +27,7 @@ final class ProtocolTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode(WireMessage.self, from: configuration(version: WireProtocol.version)))
         let state = ServerState(session: UUID(), lease: UUID(), geometry: 3,
             target: TargetDescription(name: "Test", rect: Rect(x: 0, y: 0, width: 1920, height: 1080)),
-            dragActive: false, acknowledgedSequence: 17, inputAllowed: false)
+            dragActive: false, acknowledgedSequence: 17, inputAllowed: false, zoomAvailable: true)
         let encoded = try JSONEncoder().encode(WireMessage.state(state))
         guard case .state(let decoded) = try JSONDecoder().decode(WireMessage.self, from: encoded) else {
             return XCTFail("Expected a configuration envelope")
@@ -34,6 +35,7 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(decoded.version, WireProtocol.version)
         XCTAssertEqual(decoded.acknowledgedSequence, 17)
         XCTAssertFalse(decoded.inputAllowed)
+        XCTAssertTrue(decoded.zoomAvailable)
     }
 
     func testSessionRejectsReplayExpiredLeaseAndOldGeometry() {

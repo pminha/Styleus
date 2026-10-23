@@ -44,6 +44,14 @@ Pencil movement is relative: lift and reposition without teleporting the pointer
 
 One finger does not move or click the pointer. Pencil contact takes priority over scrolling; lift the Pencil and all resting fingers before beginning a new two-finger scroll. Settings provides separate pointer and scrolling sensitivity, independent scroll-direction switches and a pressure activation threshold.
 
+### Experimental pinch zoom
+
+Enable **Settings → Pinch to zoom → Experimental pinch zoom** on the iPad. Spread two fingers to zoom in, or pinch them together to zoom out. Sliding the fingers together still scrolls. A gesture stays with the action it starts; lift both fingers before switching. This works in both input modes and is off by default, preserving the original scrolling behavior until enabled.
+
+The Mac companion constructs magnification events directly. **Hammerspoon, a driver, paid membership and an extra helper are not required.** This uses undocumented macOS event fields and support may change with OS or app updates. The Mac checks event construction at startup and disables zoom if that check fails. Browser and page behavior can differ; Chromium-based browsers may require a larger pinch before zoom starts. See [the experiment and its limits](docs/native-pinch-research.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Update both apps together: the zoom-capable protocol rejects older peers with an app-version message. Reconnect after updating. Physical iPad zoom behavior and target-app compatibility must be checked using the [hardware checklist](docs/hardware-checklist.md); successful event construction alone is not a compatibility guarantee.
+
 ### Basic annotation tablet
 
 Each point in the iPad's active drawing area maps to a fixed point on the selected Mac display or region. Aspect ratio is preserved, with inactive margins. Light contact positions the pointer; firmer pressure starts a stroke. Easing pressure or lifting ends it. Separate strokes do not get joined when you reposition.

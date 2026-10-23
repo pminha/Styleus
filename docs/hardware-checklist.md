@@ -52,3 +52,18 @@ Use disposable files, a blank test note or a harmless window. Run this checklist
 - [ ] Renew the iPad app after actual provisioning expiry using the same team and identifiers. Verify preferences and pairing, or record any necessary re-pairing.
 
 Process termination by the OS cannot execute a cleanup handler. If a process crash leaves a button logically held, use the physical Mac mouse/trackpad to click and release. The watchdog covers network stalls while the companion is running.
+
+## Experimental pinch zoom
+
+These checks are pending for the direct Styleus implementation. Keep Hammerspoon closed; it is not a dependency. Use a disposable document or test page.
+
+- [ ] Update both native apps and reconnect. Confirm an older peer is rejected with an app-version message.
+- [ ] With Experimental pinch zoom off, verify the accepted two-finger scroll and glide behavior is unchanged.
+- [ ] Enable Settings → Pinch to zoom → Experimental pinch zoom. Spread and contract two fingers in both input modes. The target should zoom without moving the pointer or scrolling at the same time.
+- [ ] Slide two fingers together to scroll, then vary their spacing after scrolling starts. The gesture must remain scrolling until both fingers lift. Repeat starting with pinch: it must stay zoom until lift.
+- [ ] Check small and large pinches in each intended Mac app. Chromium-based browsers may need a larger initial span change; record app/version and perceived response rather than assuming universal support.
+- [ ] Lift and replace one finger during zoom. No jump or resumed gesture should occur until both fingers have lifted.
+- [ ] Rest a palm during Pencil use, then lift the Pencil with the palm still down. No zoom should start. Lift the entire hand before a new finger gesture.
+- [ ] Start zoom, then touch with the Pencil, add a third finger, rotate, switch modes or change the setting. Zoom must stop, and fresh contact must be required.
+- [ ] Disconnect/unplug or background during zoom, reconnect explicitly, and verify no old zoom resumes. Switch the foreground Mac app during a pinch; continued movement must not zoom the newly focused app.
+- [ ] Run Test Pinch Zoom… on the Mac only in its disposable test window. Confirm the native receiver reports magnification events and changing page scale. This Mac-only check does not replace physical iPad testing.

@@ -8,6 +8,7 @@ final class PadModel: ObservableObject {
     @Published var connected = false
     @Published var connecting = false
     @Published var inputAllowed = false
+    @Published var zoomAvailable = false
     @Published var paired = false
     @Published var mode: InputMode = .trackpad
     @Published var dragActive = false
@@ -177,20 +178,22 @@ final class PadModel: ObservableObject {
             }
             let changedGeometry = self.state?.geometry != received.geometry
             let permissionChanged = self.state?.inputAllowed != received.inputAllowed
+            let zoomChanged = self.state?.zoomAvailable != received.zoomAvailable
             self.state = received
             self.lastStateAt = ProcessInfo.processInfo.systemUptime
             self.target = received.target
-            if changedGeometry || permissionChanged { self.inputRevision += 1 }
+            if changedGeometry || permissionChanged || zoomChanged { self.inputRevision += 1 }
             self.connected = true; self.connecting = false
             self.connectionProgress.establish()
             self.inputAllowed = received.inputAllowed
+            self.zoomAvailable = received.zoomAvailable
             self.status = received.inputAllowed ? "Connected · encrypted \(mode.title)" : "Connected · enable Accessibility in the Mac app"
             if let pending = self.pendingDrag, received.acknowledgedSequence < pending.0 {
                 self.dragActive = pending.1
             } else {
                 self.pendingDrag = nil; self.dragActive = received.dragActive
             }
-            if first || changedGeometry || permissionChanged {
+            if first || changedGeometry || permissionChanged || zoomChanged {
                 self.send(.cancel)
                 self.send(.mode(self.mode))
             }
@@ -309,7 +312,7 @@ final class PadModel: ObservableObject {
         closeCandidates(); attemptedInterfaces.removeAll()
         state = nil; sequence = 0; pendingDrag = nil; target = nil
         timing = nil; roundTripMilliseconds = nil; timingSampleCount = 0; activeConnection = nil
-        connected = false; connecting = false; inputAllowed = false; dragActive = false; status = reason
+        connected = false; connecting = false; inputAllowed = false; zoomAvailable = false; dragActive = false; status = reason
         connectionProgress.finish(issue: issue)
         inputRevision += 1; UIApplication.shared.isIdleTimerDisabled = false
     }

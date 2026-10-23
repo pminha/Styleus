@@ -6,12 +6,13 @@ This report distinguishes automated checks from physical observations. It exclud
 
 The native iPad app, generic iPad simulator target and native Mac companion have built successfully in the recorded [build environment](environment.md). The simulator build was compiled only; no simulator execution is claimed.
 
-The shared Swift suite currently contains **93 tests**, covering:
+The shared Swift suite currently contains **121 tests**, covering:
 
 - Relative anchoring, stable taps, tap/double-tap/hold recognition, pressure activation and hysteresis.
 - Absolute aspect-fit mapping, display/region coordinates, negative display origins, invalid coordinates, separate strokes and margin handling.
 - Mode/cancellation releases, stale samples, session/sequence/geometry rejection, expiring leases and clean reconnects.
 - Two-finger recognition, palm/finger-change handling, fractional scrolling, speed-dependent gain, momentum, phase handling and independent direction settings.
+- Exclusive scroll/pinch arbitration, ratio preservation, disabled-mode scrolling equivalence, malformed zoom rejection, native phase encoding, zoom/drag exclusion and terminal-event release.
 - Core Graphics event construction, keyboard modifiers, click counts and pressure/status presentation. Event-encoding tests do not post global input.
 - Framing, random pairing credentials, route-selection policy and a real authenticated localhost TLS exchange. Wrong-key authentication is rejected.
 - Connection headings, retained error details, permission guidance and clearing old failure messages.
@@ -57,3 +58,9 @@ The matching source ZIP contains exactly those 106 files, with fixed timestamps,
 Both native icon catalogs contain ten correctly sized PNGs. All iPad icons are opaque; Mac icons preserve transparency around the laptop silhouette. The original vector artwork was inspected at 256 pixels and 32 pixels. The 30-second illustrated promo was fully decoded and its six scenes visually inspected: 1,800 H.264 frames at 1920 × 1080 and 60 fps, with stereo AAC audio. It is an animation, not a recording or latency measurement.
 
 No distribution-signed binary is included. Physical first-time installation on another person's hardware and renewal after actual expiry remain separate acceptance checks.
+
+## Direct native pinch update
+
+The shared suite passes **121 Swift tests**, including 28 new zoom recognition, native encoding and receiver-state tests. All **14 setup-helper tests** pass. The current source passes unsigned Mac, physical-iPad-target and generic iPad-simulator compilation; these checks do not establish simulator interaction or physical pinch behavior.
+
+The direct encoder constructs native magnification through Core Graphics setters and verifies AppKit phase/fractional-value readback locally. This is distinct from the earlier Hammerspoon delivery experiment. Signed installation, direct event delivery to the native diagnostic and physical iPad zoom acceptance remain pending. No Hammerspoon code, executable, helper or runtime dependency is included. The experimental setting defaults to off. See [the research record](native-pinch-research.md) and [hardware checklist](hardware-checklist.md).

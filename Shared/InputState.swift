@@ -13,6 +13,7 @@ enum InputAction: Codable, Equatable {
     case click(MouseButton, Int)
     case drag(Bool)
     case scroll(ScrollSample)
+    case zoom(ZoomSample)
     case cancel
 }
 
@@ -23,6 +24,7 @@ enum MouseEffect: Equatable {
     case down(MouseButton, Point, clickCount: Int)
     case up(MouseButton, Point, clickCount: Int)
     case scroll(ScrollSample)
+    case zoom(ZoomSample)
 }
 
 /// Pure state machine. The receiver alone owns held mouse state.
@@ -31,6 +33,7 @@ struct InputState {
     private(set) var cursor = Point.zero
     private(set) var dragActive = false
     private(set) var strokeActive = false
+    private(set) var zoomActive = false
     private enum Scrolling { case idle, contact, awaitingMomentum, momentum }
     private var scrolling = Scrolling.idle
     var target = Rect(x: 0, y: 0, width: 1, height: 1)
@@ -45,7 +48,31 @@ struct InputState {
         let wasHeld = leftHeld
         dragActive = false
         strokeActive = false
-        return (wasHeld ? [.up(.left, cursor, clickCount: 1)] : []) + cancelScroll()
+        return (wasHeld ? [.up(.left, cursor, clickCount: 1)] : []) + cancelScroll() + cancelZoom()
+    }
+
+    private mutating func cancelZoom() -> [MouseEffect] {
+        guard zoomActive else { return [] }
+        zoomActive = false
+        return [.zoom(ZoomSample(phase: .cancelled))]
+    }
+
+    private mutating func applyZoom(_ sample: ZoomSample) -> [MouseEffect] {
+        guard !leftHeld, sample.isValid else { return cancelZoom() }
+        switch sample.phase {
+        case .began:
+            let effects = cancelScroll() + cancelZoom()
+            zoomActive = true
+            return effects + [.zoom(sample)]
+        case .changed:
+            guard zoomActive else { return [] }
+            return [.zoom(sample)]
+        case .ended:
+            guard zoomActive else { return [] }
+            zoomActive = false
+            return [.zoom(sample)]
+        case .cancelled: return cancelZoom()
+        }
     }
 
     private mutating func cancelScroll() -> [MouseEffect] {
@@ -81,6 +108,18 @@ struct InputState {
     mutating func apply(_ action: InputAction) -> [MouseEffect] {
         switch action {
         case .heartbeat: return []
+        case .zoom(let sample): return applyZoom(sample)
+        default:
+            // Pointer and scrolling input must end magnification before starting
+            // their own effects, including when the incoming action is rejected.
+            let effects = cancelZoom()
+            return effects + applyPointerOrScroll(action)
+        }
+    }
+
+    private mutating func applyPointerOrScroll(_ action: InputAction) -> [MouseEffect] {
+        switch action {
+        case .heartbeat, .zoom: return [] // Handled before pointer/scroll dispatch.
         case .cancel: return release()
         case .mode(let newMode):
             let effects = release()

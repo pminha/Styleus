@@ -29,6 +29,10 @@ struct MouseEventEncoder {
             heldEventNumber.removeValue(forKey: button)
         case .scroll(let sample):
             result = scrollEncoder.event(sample, source: source)
+        case .zoom(let sample):
+            // Native magnification carries its own semantics. Inheriting Ctrl
+            // or Command here can change how a receiving app interprets it.
+            return ZoomEventEncoder.event(sample, source: source)
         }
         // A private event source does not inherit the Mac keyboard's modifier
         // state. Replace keyboard bits on every event so key releases and changes

@@ -19,6 +19,7 @@ struct PadContentView: View {
     @AppStorage("reverseVerticalScroll") private var reverseVerticalScroll = !(UserDefaults.standard.object(forKey: "naturalScroll") as? Bool ?? true)
     @AppStorage("reverseHorizontalScroll") private var reverseHorizontalScroll = !(UserDefaults.standard.object(forKey: "naturalScroll") as? Bool ?? true)
     @AppStorage("scrollSensitivity") private var scrollSensitivity = 1.0
+    @AppStorage("experimentalPinchZoom") private var experimentalPinchZoom = false
     @AppStorage("pressureThreshold") private var pressureThreshold = 0.2
     @State private var pairing = false
     @State private var settings = false
@@ -43,6 +44,7 @@ struct PadContentView: View {
                 InputSurface(mode: model.mode, sensitivity: sensitivity, pressureThreshold: pressureThreshold,
                              reverseVerticalScroll: reverseVerticalScroll, reverseHorizontalScroll: reverseHorizontalScroll,
                              scrollSensitivity: scrollSensitivity,
+                             pinchZoomEnabled: experimentalPinchZoom && model.zoomAvailable,
                              targetAspect: model.target?.rect.aspect ?? 16.0 / 10,
                              revision: model.inputRevision, enabled: model.connected && model.inputAllowed,
                              feedback: pencilFeedback,
@@ -64,6 +66,7 @@ struct PadContentView: View {
         .onChange(of: reverseVerticalScroll) { _, _ in model.resetContact() }
         .onChange(of: reverseHorizontalScroll) { _, _ in model.resetContact() }
         .onChange(of: scrollSensitivity) { _, _ in model.resetContact() }
+        .onChange(of: experimentalPinchZoom) { _, _ in model.resetContact() }
         .sheet(isPresented: $pairing) { PairMacSheet(model: model) }
         .sheet(isPresented: $settings) {
             NavigationStack {
@@ -96,6 +99,14 @@ struct PadContentView: View {
                         Toggle("Reverse horizontal scrolling", isOn: $reverseHorizontalScroll)
                         Text(reverseHorizontalScroll ? "Pull right to reveal content to the right." : "Pull right to reveal content to the left.")
                         Text("Each direction changes independently. Changing a setting stops any ongoing scroll.")
+                    }
+                    Section("Pinch to zoom") {
+                        Toggle("Experimental pinch zoom", isOn: $experimentalPinchZoom)
+                        Text("Spread two fingers to zoom in, or pinch them together to zoom out. Slide them together to scroll. Each gesture stays with the action it starts; lift both fingers before switching.")
+                        Text("Built into Styleus; no extra app is needed. Support varies by Mac app and macOS version. Some browsers require a larger pinch before zoom begins. Turn this off to use the original scrolling behavior.")
+                        if model.connected && !model.zoomAvailable {
+                            Text("Experimental zoom is unavailable on this Mac. Scrolling remains active.").foregroundStyle(.secondary)
+                        }
                     }
                     Section("Pencil pressure") {
                         HStack { Text("Pressure needed"); Spacer(); Text("\(Int(pressureThreshold * 100))%") }

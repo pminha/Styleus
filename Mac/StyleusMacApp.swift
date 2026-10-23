@@ -5,7 +5,7 @@ import CoreImage.CIFilterBuiltins
 final class StyleusAppDelegate: NSObject, NSApplicationDelegate {
     weak var model: MacModel?
     func applicationWillTerminate(_ notification: Notification) {
-        model?.stop("App quit"); ScrollDiagnostics.shared.finish()
+        model?.stop("App quit"); ScrollDiagnostics.shared.finish(); ZoomDiagnostics.shared.finish()
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 }
@@ -90,10 +90,11 @@ struct MacContentView: View {
                 Picker("Cursor indicator", selection: $model.cursorIndicatorStyle) {
                     ForEach(CursorIndicatorStyle.allCases, id: \.self) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)
-                Text("Pressure feedback is at the top of the iPad screen. The optional Mac cursor ring is off by default; Dragging only and Pressure and dragging enable it here.")
+                Text("Pressure feedback is at the left edge of the iPad screen. The optional Mac cursor ring is off by default; Dragging only and Pressure and dragging enable it here.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Button("Test Scrolling…") { ScrollDiagnostics.shared.show() }
+            Button("Test Pinch Zoom…") { showPinchZoomTest(model) }
             PressureProbePanel(probe: model.pressureProbe, permitted: model.accessible, run: model.runPressureProbe)
         }
         .padding(24).frame(maxWidth: .infinity, alignment: .topLeading)
@@ -120,10 +121,21 @@ private struct StyleusMenu: View {
             ForEach(CursorIndicatorStyle.allCases, id: \.self) { Text($0.title).tag($0) }
         }
         Button("Test Scrolling…") { ScrollDiagnostics.shared.show() }
+        Button("Test Pinch Zoom…") { showPinchZoomTest(model) }
         Button("Disconnect and stop") { model.stop() }
         Divider()
         Button("Quit Styleus") { model.stop(); NSApp.terminate(nil) }
     }
+}
+
+private func showPinchZoomTest(_ model: MacModel) {
+    model.stop("Native pinch zoom test; reconnect afterward")
+    ZoomDiagnostics.shared.show(prepareToRun: { [weak model] in
+        model?.stop("Native pinch zoom test; reconnect afterward")
+    }, inputIsStopped: { [weak model] in
+        guard let model else { return false }
+        return !model.connected && !model.listening && !model.pressureProbe.running
+    })
 }
 
 private struct PressureProbePanel: View {

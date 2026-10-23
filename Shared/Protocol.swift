@@ -1,7 +1,7 @@
 import Foundation
 
 enum WireProtocol {
-    static let version = 6
+    static let version = 7
 }
 
 struct TargetDescription: Codable, Equatable {
@@ -18,6 +18,7 @@ struct ServerState: Codable {
     var dragActive: Bool
     var acknowledgedSequence: UInt64 = 0
     var inputAllowed: Bool = true
+    var zoomAvailable: Bool = false
 }
 
 extension ServerState {
@@ -32,12 +33,14 @@ extension ServerState {
             dragActive = try values.decode(Bool.self, forKey: .dragActive)
             acknowledgedSequence = try values.decode(UInt64.self, forKey: .acknowledgedSequence)
             inputAllowed = try values.decode(Bool.self, forKey: .inputAllowed)
+            zoomAvailable = try values.decode(Bool.self, forKey: .zoomAvailable)
         } else {
             // Decode older configuration envelopes only to report an actionable version error.
             // They must never enable input or become an active session.
             acknowledgedSequence = 0
             inputAllowed = false
             dragActive = false
+            zoomAvailable = false
         }
     }
 }
