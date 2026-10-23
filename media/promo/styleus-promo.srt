@@ -1,0 +1,29 @@
+1
+00:00:00,500 --> 00:00:03,050
+Styleus. Your Pencil. Your Mac.
+
+2
+00:00:03,700 --> 00:00:09,050
+Point. Tap. Go.
+A Pencil trackpad for your Mac.
+
+3
+00:00:09,700 --> 00:00:14,750
+Press. Move. Release.
+A firmer touch activates click-drag.
+
+4
+00:00:15,400 --> 00:00:22,050
+Make your mark.
+Basic mouse-based annotation on your Mac.
+
+5
+00:00:22,700 --> 00:00:25,750
+Two fingers. Keep the flow.
+Scroll vertically and horizontally.
+
+6
+00:00:26,700 --> 00:00:30,000
+Styleus. Your Pencil. Your Mac.
+Build it yourself. Free and open source.
+Free iPad signing renews every 7 days.

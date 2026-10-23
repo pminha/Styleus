@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">Styleus Mac: Pencil tip as cursor</title>
+  <rect x="112.0" y="224.0" width="800.0" height="512.0" rx="32.0" transform="translate(0.0 0.0) scale(1.0)" fill="#20211F"/>
+  <rect x="128.0" y="240.0" width="768.0" height="480.0" rx="16.0" transform="translate(0.0 0.0) scale(1.0)" fill="#F3F2ED"/>
+  <path d="M 80.0 736.0 L 944.0 736.0 L 931.0 753.0 Q 928.0 758.0 920.0 758.0 L 104.0 758.0 Q 96.0 758.0 93.0 753.0 Z" transform="translate(0.0 0.0) scale(1.0)" fill="#20211F"/>
+  <path d="M 311.0 871.0 L 945.0 257.0 Q 979.0 223.0 1013.0 257.0 Q 1047.0 291.0 1013.0 325.0 L 382.0 941.0 L 270.0 1008.0 Q 257.0 1016.0 249.0 1007.0 Q 242.0 1000.0 249.0 987.0 Z" transform="translate(218.75 191.35) scale(0.46)" fill="#20211F"/>
+  <path d="M 308.0 858.0 L 342.0 892.0 L 362.0 872.0 L 380.0 890.0 L 360.0 910.0 L 399.0 949.0" transform="translate(218.75 191.35) scale(0.46)" fill="none" stroke="#F3F2ED" stroke-width="9.0" stroke-linejoin="round" stroke-linecap="butt"/>
+</svg>

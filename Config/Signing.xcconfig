@@ -1,0 +1,14 @@
+// Public defaults. Device installation needs your own private local settings.
+STYLEUS_IPAD_BUNDLE_ID = com.example.styleus.ipad
+STYLEUS_MAC_BUNDLE_ID = com.example.styleus.mac
+STYLEUS_IPAD_DEVELOPMENT_TEAM =
+STYLEUS_MAC_DEVELOPMENT_TEAM =
+STYLEUS_IPAD_CODE_SIGN_STYLE = Automatic
+STYLEUS_MAC_CODE_SIGN_STYLE = Manual
+STYLEUS_IPAD_CODE_SIGN_IDENTITY = Apple Development
+STYLEUS_MAC_CODE_SIGN_IDENTITY = -
+STYLEUS_IPAD_PROFILE_SPECIFIER =
+STYLEUS_MAC_PROFILE_SPECIFIER =
+
+// The optional local file is ignored by Git and is never embedded in the project.
+#include? "Local.xcconfig"
