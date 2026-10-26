@@ -6,15 +6,6 @@ Styleus runs as two native apps: one on the iPad, one on the Mac. Move and click
 
 I built it for two things: replacing everyday trackpad use with my iPad and Pencil, and making it easier to read and annotate papers in Zotero on my Mac. Trackpad mode handles pointing, clicking, dragging and scrolling; Drawing tablet mode lets me write directly over a selected area of the PDF.
 
-<p>
-  <img src="media/branding/styleus-ipad-1024.png" width="96" alt="Styleus iPad icon">
-  <img src="media/branding/styleus-mac-1024.png" width="96" alt="Styleus Mac icon">
-</p>
-
-[![Watch the Styleus demo](media/promo/styleus-promo-poster.png)](media/promo/styleus-promo.mp4)
-
-*30-second illustrated demo. This is an animation, not a recording of device performance.*
-
 You build both apps yourself with Xcode. A free Apple Account is enough for personal installation, but **the iPad app needs to be re-signed and reinstalled every seven days**. There is no App Store download. [Build instructions](SETUP.md) · [Renewal instructions](SETUP.md#6-renew-the-ipad-app-every-seven-days)
 
 ## Using it
@@ -59,6 +50,8 @@ You'll need:
 - A Mac with Xcode and Python 3.
 - A free Apple Account for signing your own copy.
 - A USB data cable for device setup and wired use.
+
+Pressure dragging and annotation require a pressure-sensitive Pencil. Apple Pencil (USB-C) lacks pressure sensitivity, so it cannot use those features in the current implementation. See [Apple’s Pencil comparison](https://www.apple.com/apple-pencil/). Only Apple Pencil 2 has been physically tested with Styleus.
 
 The deployment targets are **iPadOS 17+ and macOS 14+**. Xcode must also support the iPad's installed OS and may require a newer macOS. Development testing has used a 2018 11-inch iPad Pro, Apple Pencil 2 and an Apple silicon Mac; the minimum OS versions and Intel Macs have not been physically tested.
 
@@ -108,6 +101,8 @@ zsh scripts/test.sh
 python3 -m unittest discover -s scripts/tests -v
 zsh scripts/build.sh --check-only
 ```
+
+GitHub Actions runs the Swift and setup-helper tests on pushes to `main` and pull requests. These checks do not build or sign the native apps, or test physical input.
 
 The last validation passed **121 Swift tests**, **14 setup-helper tests**, and all three build targets. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
 

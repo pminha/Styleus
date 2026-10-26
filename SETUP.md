@@ -14,6 +14,8 @@ You need:
 - A USB data cable for initial device preparation and wired use. Charging-only cables will not work.
 - Python 3 for the small project/signing configuration helpers. No third-party Python or Swift package is needed.
 
+Pressure dragging and annotation require a pressure-sensitive Pencil. Apple Pencil (USB-C) lacks pressure sensitivity, so it cannot use those features in the current implementation. See [Apple’s Pencil comparison](https://www.apple.com/apple-pencil/). Only Apple Pencil 2 has been physically tested with Styleus.
+
 Use an Xcode version that supports your iPad's installed OS. Xcode itself may require a newer macOS than Styleus's minimum runtime version. If Xcode explicitly reports that the device OS is unsupported, update Xcode; lowering the project's deployment target does not add device support. An iPad simulator can compile and exercise some UI, but cannot validate physical Pencil input or the wired connection.
 
 Install the matching **iOS simulator runtime** under **Xcode → Settings → Components** as well. Xcode's icon compiler can require this component even when building for a physical iPad. If a build reports “No available simulator runtimes,” install the iOS component and retry. On Apple silicon, `xcodebuild -downloadPlatform iOS -architectureVariant arm64` installs the smaller Apple-silicon variant. This is a free, multi-gigabyte Xcode download. See [Apple's component instructions](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components).
