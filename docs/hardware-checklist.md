@@ -20,7 +20,14 @@ Use disposable files, a blank test note or a harmless window. Run this checklist
 - [ ] Press more firmly while moving a harmless window. Ease pressure and then try lifting to release. Neither release adds a click.
 - [ ] Change Pressure needed; verify the meter's activation mark and the effort needed for a drag change together.
 - [ ] Hold Mac Command and tap to add a selection; Shift-tap a range; Control-tap for a menu; Option-drag a disposable file to copy it. Release modifiers and check ordinary input again.
-- [ ] Rest a palm before, during and after Pencil movement. It must not move, click or scroll. Lift all resting fingers before intentionally scrolling.
+- [ ] With Finger Trackpad off, rest a palm before, during and after Pencil movement. It must not move, click or scroll. Lift all resting fingers before intentionally scrolling.
+
+## Finger Trackpad
+
+- [ ] Enable **Settings → Trackpad → Finger Trackpad**. Slide one finger, lift, and reposition it. Tap a small target, then double-tap it. Check that tap wobble keeps the pointer still.
+- [ ] Tap twice on a window title bar and hold the second touch. Move the window, then lift to release. Repeat and add a second finger, touch with the Pencil, or open Settings mid-drag. The mouse button should release each time.
+- [ ] Scroll or pinch with two fingers, lift just one, and move the remaining finger. The pointer should stay still until a fresh single touch. Touch a glide to stop it and check for an accidental click.
+- [ ] In Drawing tablet mode, rest one finger, move it and lift it. A fresh Pencil contact should still position the pointer and draw. Switch back to Trackpad to use finger pointing again.
 
 ## Two-finger scrolling
 

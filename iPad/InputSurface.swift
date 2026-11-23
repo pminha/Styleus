@@ -9,6 +9,7 @@ struct InputSurface: UIViewRepresentable {
     var reverseHorizontalScroll: Bool
     var scrollSensitivity: Double
     var pinchZoomEnabled: Bool
+    var fingerTrackpadEnabled: Bool
     var targetAspect: Double
     var revision: UInt64
     var enabled: Bool
@@ -24,6 +25,7 @@ struct InputSurface: UIViewRepresentable {
         view.configure(mode: mode, sensitivity: sensitivity, pressureThreshold: pressureThreshold,
                        reverseVerticalScroll: reverseVerticalScroll, reverseHorizontalScroll: reverseHorizontalScroll,
                        scrollSensitivity: scrollSensitivity, pinchZoomEnabled: pinchZoomEnabled,
+                       fingerTrackpadEnabled: fingerTrackpadEnabled,
                        aspect: targetAspect, revision: revision, enabled: enabled)
     }
     static func dismantleUIView(_ uiView: PencilInputView, coordinator: ()) { uiView.shutdown() }
@@ -43,6 +45,9 @@ final class PencilInputView: UIView {
         }
     }
     private var interpreter = PencilInterpreter()
+    private var finger = FingerTrackpad<ObjectIdentifier>()
+    private var fingerTrackpadEnabled = false
+    private var pendingFingerHold: DispatchWorkItem?
     private var scroll = TwoFingerGestureInterpreter<ObjectIdentifier>()
     private var motion = ScrollMotion()
     private var displayLink: CADisplayLink?
@@ -83,24 +88,33 @@ final class PencilInputView: UIView {
 
     func configure(mode: InputMode, sensitivity: Double, pressureThreshold: Double,
                    reverseVerticalScroll: Bool, reverseHorizontalScroll: Bool, scrollSensitivity: Double,
-                   pinchZoomEnabled: Bool, aspect: Double,
+                   pinchZoomEnabled: Bool, fingerTrackpadEnabled: Bool, aspect: Double,
                    revision: UInt64, enabled: Bool) {
         interpreter.sensitivity = sensitivity
+        finger.sensitivity = sensitivity
+        let allowFingerPointer = fingerTrackpadEnabled && mode == .trackpad
         guard interpreter.mode != mode || interpreter.targetAspect != aspect ||
             interpreter.pressureThreshold != pressureThreshold || scroll.reverseVertical != reverseVerticalScroll ||
             scroll.reverseHorizontal != reverseHorizontalScroll ||
             scroll.sensitivity != scrollSensitivity ||
             scroll.pinchZoomEnabled != pinchZoomEnabled ||
+            self.fingerTrackpadEnabled != allowFingerPointer ||
             self.revision != revision || self.enabled != enabled else { return }
-        interrupt(send: false)
+        interrupt(sendCancellation: false)
         interpreter.mode = mode
         interpreter.pressureThreshold = pressureThreshold; interpreter.targetAspect = aspect
         scroll.reverseVertical = reverseVerticalScroll
         scroll.reverseHorizontal = reverseHorizontalScroll
         scroll.sensitivity = scrollSensitivity
         scroll.pinchZoomEnabled = pinchZoomEnabled
-        accessibilityLabel = pinchZoomEnabled ? "Pencil, two-finger scroll, and pinch zoom area" : "Pencil and two-finger scroll area"
-        accessibilityHint = (pinchZoomEnabled ? "Slide two fingers to scroll or pinch to zoom. " : "Slide two fingers to scroll. ") +
+        self.fingerTrackpadEnabled = allowFingerPointer
+        if allowFingerPointer {
+            accessibilityLabel = "Pencil and finger trackpad"
+        } else {
+            accessibilityLabel = pinchZoomEnabled ? "Pencil, two-finger scroll, and pinch zoom area" : "Pencil and two-finger scroll area"
+        }
+        accessibilityHint = (allowFingerPointer ? "Slide one finger to point, tap to click, or double-tap and hold to drag. " : "") +
+            (pinchZoomEnabled ? "Slide two fingers to scroll or pinch to zoom. " : "Slide two fingers to scroll. ") +
             "Trackpad: tap the Pencil to click, tap twice to double-click, hold then lift to right-click, press firmly while moving to drag. Drawing: press to draw."
         self.revision = revision; self.enabled = enabled
         updateFeedback()
@@ -113,20 +127,44 @@ final class PencilInputView: UIView {
         if rect != interpreter.surface { interrupt(); interpreter.surface = rect; setNeedsDisplay() }
     }
 
-    func interrupt(send: Bool = true) {
+    func interrupt(sendCancellation: Bool = true) {
+        interruptFinger()
         let actions = interpreter.interrupt()
         let endZoom = scroll.interrupt()
         let endScroll = motion.cancel()
         displayLink?.isPaused = true
         updateFeedback()
-        if send { emitScroll(endScroll); emitZoom(endZoom); emit(actions) }
+        if sendCancellation { emitScroll(endScroll); emitZoom(endZoom); emit(actions) }
         pencilDot.isHidden = true
     }
 
     private func emit(_ actions: [InputAction]) {
         updateFeedback()
         onStatus?(interpreter.status)
-        actions.forEach { onAction?($0) }
+        send(actions)
+    }
+    private func send(_ actions: [InputAction]) { actions.forEach { onAction?($0) } }
+
+    private func cancelFingerHold() {
+        pendingFingerHold?.cancel()
+        pendingFingerHold = nil
+    }
+
+    private func interruptFinger() {
+        cancelFingerHold()
+        send(finger.interrupt())
+    }
+
+    private func scheduleFingerHold() {
+        cancelFingerHold()
+        guard let deadline = finger.holdDeadline else { return }
+        let hold = DispatchWorkItem { [weak self] in
+            guard let self, self.finger.holdDeadline == deadline else { return }
+            self.pendingFingerHold = nil
+            self.send(self.finger.hold(at: deadline))
+        }
+        pendingFingerHold = hold
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0, deadline - CACurrentMediaTime()), execute: hold)
     }
     private func updateFeedback() {
         let presentation = PencilFeedbackPresentation(interpreter, enabled: enabled)
@@ -189,17 +227,28 @@ final class PencilInputView: UIView {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // Any fresh contact stops momentum before Pencil input can click/draw.
-        emitScroll(motion.cancel())
+        let stopped = motion.cancel()
+        emitScroll(stopped)
         updateDirectTouches(touches)
         if activePencil == nil, let touch = touches.first(where: { $0.type == .pencil }) {
             // End native magnification before Pencil begin can position or press
             // a mouse button. Existing fingers remain blocked until they lift.
+            interruptFinger()
             emitZoom(scroll.interrupt())
             activePencil = ObjectIdentifier(touch)
             if enabled {
                 emit(interpreter.begin(point(touch), pressure: pressure(touch), at: touch.timestamp))
                 positionDot(for: touch)
+            }
+        } else if enabled, fingerTrackpadEnabled, activePencil == nil,
+                  let touch = touches.first(where: { $0.type == .direct }) {
+            if stopped.contains(where: { $0.phase == .momentumEnded }) {
+                // A touch that brakes a flick must not also click on lift.
+                interruptFinger()
+            } else {
+                send(finger.begin(directTouches, at: touch.timestamp))
+                if finger.activeTouch != nil { interpreter.discardPendingTap() }
+                scheduleFingerHold()
             }
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
@@ -213,6 +262,10 @@ final class PencilInputView: UIView {
                 emit(interpreter.move(point(sample), pressure: pressure(sample), at: sample.timestamp))
             }
             positionDot(for: touch)
+        } else if let id = finger.activeTouch, let touch = touches.first(where: { ObjectIdentifier($0) == id }) {
+            for sample in event?.coalescedTouches(for: touch) ?? [touch] {
+                send(finger.move(to: point(sample), at: sample.timestamp))
+            }
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
     }
@@ -223,11 +276,15 @@ final class PencilInputView: UIView {
             if enabled { emit(interpreter.move(point(touch), pressure: pressure(touch), at: touch.timestamp)) }
             emit(interpreter.end(at: touch.timestamp))
             activePencil = nil; pencilDot.isHidden = true
+        } else if let id = finger.activeTouch, let touch = touches.first(where: { ObjectIdentifier($0) == id }) {
+            cancelFingerHold()
+            send(finger.end(at: point(touch), time: touch.timestamp))
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if touches.contains(where: { $0.type == .direct }) { interruptFinger() }
         emitScroll(motion.cancel())
         emitZoom(scroll.interrupt())
         updateDirectTouches(touches, removing: true)
@@ -259,9 +316,16 @@ final class PencilInputView: UIView {
                                         withAttributes: [.font: UIFont.systemFont(ofSize: 15, weight: .medium),
                                                          .foregroundColor: statusColor])
         let fingerHint = scroll.pinchZoomEnabled ? "Slide two fingers to scroll · pinch to zoom" : "Slide two fingers to scroll"
-        let text = !enabled ? "Input paused\nCheck connection and Mac Accessibility approval" : interpreter.mode == .drawing ?
-            "Light Pencil touch positions the pointer\nPress to draw · ease pressure or lift to end\n\(fingerHint)" :
-            "Pencil: tap to click · tap twice to double-click\nHold, then lift to right-click · press while moving to drag\n\(fingerHint)"
+        let text: String
+        if !enabled {
+            text = "Input paused\nCheck connection and Mac Accessibility approval"
+        } else if interpreter.mode == .drawing {
+            text = "Light Pencil touch positions the pointer\nPress to draw · ease pressure or lift to end\n\(fingerHint)"
+        } else if fingerTrackpadEnabled {
+            text = "Slide one finger or the Pencil to point · tap to click\nDouble-tap and hold with a finger to drag\n\(fingerHint)"
+        } else {
+            text = "Pencil: tap to click · tap twice to double-click\nHold, then lift to right-click · press while moving to drag\n\(fingerHint)"
+        }
         let style = NSMutableParagraphStyle(); style.alignment = .center
         (text as NSString).draw(in: CGRect(x: area.minX + 16, y: area.midY - 40, width: max(0, area.width - 32), height: 100),
                                withAttributes: [.font: UIFont.systemFont(ofSize: 18, weight: .medium),

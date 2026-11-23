@@ -20,6 +20,7 @@ struct PadContentView: View {
     @AppStorage("reverseHorizontalScroll") private var reverseHorizontalScroll = !(UserDefaults.standard.object(forKey: "naturalScroll") as? Bool ?? true)
     @AppStorage("scrollSensitivity") private var scrollSensitivity = 1.0
     @AppStorage("experimentalPinchZoom") private var experimentalPinchZoom = false
+    @AppStorage("fingerTrackpad") private var fingerTrackpad = false
     @AppStorage("pressureThreshold") private var pressureThreshold = 0.2
     @State private var pairing = false
     @State private var settings = false
@@ -45,6 +46,7 @@ struct PadContentView: View {
                              reverseVerticalScroll: reverseVerticalScroll, reverseHorizontalScroll: reverseHorizontalScroll,
                              scrollSensitivity: scrollSensitivity,
                              pinchZoomEnabled: experimentalPinchZoom && model.zoomAvailable,
+                             fingerTrackpadEnabled: fingerTrackpad,
                              targetAspect: model.target?.rect.aspect ?? 16.0 / 10,
                              revision: model.inputRevision, enabled: model.connected && model.inputAllowed,
                              feedback: pencilFeedback,
@@ -67,6 +69,7 @@ struct PadContentView: View {
         .onChange(of: reverseHorizontalScroll) { _, _ in model.resetContact() }
         .onChange(of: scrollSensitivity) { _, _ in model.resetContact() }
         .onChange(of: experimentalPinchZoom) { _, _ in model.resetContact() }
+        .onChange(of: fingerTrackpad) { _, _ in model.resetContact() }
         .sheet(isPresented: $pairing) { PairMacSheet(model: model) }
         .sheet(isPresented: $settings) {
             NavigationStack {
@@ -88,12 +91,14 @@ struct PadContentView: View {
                         HStack { Text("Sensitivity"); Spacer(); Text(String(format: "%.1f×", sensitivity)) }
                         Slider(value: $sensitivity, in: 0.2...4, step: 0.1)
                         Text("Use Apple Pencil to move the pointer. Tap for a left click, tap twice quickly for a double click, or hold still for half a second and lift for a right click. Press more firmly while moving to drag. Easing pressure or lifting releases the drag.")
-                        Text("Slide two fingers anywhere in the main area to scroll vertically or horizontally in either mode. A flick glides to a stop; touching down again stops the glide. Fingers never move or click the pointer. Scrolling pauses while the Pencil touches the screen; lift all fingers before starting a new scroll gesture afterward.")
+                        Toggle("Finger Trackpad", isOn: $fingerTrackpad)
+                        Text("In Trackpad mode, slide one finger to move the pointer or tap to click. To drag, tap twice, hold the second touch and slide. Lift to release.")
+                        Text("Slide two fingers to scroll in either mode. Touch again to stop a glide. The Pencil takes over when it touches down. Lift all resting fingers before starting another finger gesture.")
                     }
                     Section("Scrolling") {
                         HStack { Text("Scrolling speed"); Spacer(); Text(String(format: "%.2g×", scrollSensitivity)) }
                         Slider(value: $scrollSensitivity, in: 0.25...4, step: 0.25)
-                        Text("Slow slides give fine control; faster swipes travel farther. This setting scales scrolling and the following glide together. Pencil pointer sensitivity is separate.")
+                        Text("Slow slides give fine control and faster swipes travel farther. This setting adjusts scrolling and the following glide together. Adjust pointer sensitivity under Trackpad.")
                         Toggle("Reverse vertical scrolling", isOn: $reverseVerticalScroll)
                         Text(reverseVerticalScroll ? "Pull down to reveal text below." : "Pull down to reveal text above.")
                         Toggle("Reverse horizontal scrolling", isOn: $reverseHorizontalScroll)

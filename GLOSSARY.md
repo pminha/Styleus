@@ -5,8 +5,11 @@ Styleus turns an iPad and Apple Pencil into a pointing and drawing surface for a
 ## Language
 
 **Trackpad mode**:
-A mode in which Pencil movement changes the Mac cursor relative to its current position. Stationary taps produce clicks; lifting after movement and repositioning do not jump the cursor or click.
+A mode in which Pencil movement, or finger movement with Finger Trackpad enabled, changes the Mac cursor relative to its current position.
 _Avoid_: Absolute mode, tablet mode
+
+**Finger Trackpad**:
+An optional Trackpad mode setting for pointing, clicking and dragging with one finger. Two fingers control scrolling and pinch zoom.
 
 **Drawing-tablet mode**:
 A mode in which each location in the active drawing area corresponds to a fixed location in a target region on the Mac.
@@ -57,7 +60,7 @@ The portion of the iPad movement surface outside the active drawing area when th
 _Avoid_: Drawing area, cropped canvas
 
 **Pencil input**:
-A pointing interaction in which Apple Pencil controls cursor movement, clicks, and drawing. Fingers do not move or click the pointer.
+A pointing interaction in which Apple Pencil controls cursor movement, clicks and drawing. Pencil contact takes priority over finger gestures.
 _Avoid_: Finger input, pressure-sensitive input
 
 **Two-finger scrolling**:

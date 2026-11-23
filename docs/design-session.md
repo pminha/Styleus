@@ -8,7 +8,7 @@ Styleus provides general Mac navigation and basic annotation through two native 
 - Trackpad movement is relative. Lifting after movement and repositioning do not jump or click. A tap is a left click, two quick taps a double click, and a stationary long press followed by lift a right click.
 - Small tap wobble is suppressed. Deliberate movement beyond the tap allowance resumes relative movement without replaying suppressed travel.
 - Firmer moving contact starts a left-button drag. Easing pressure or lifting releases it. No right-button drag or persistent drag lock is provided.
-- Two fingers scroll in either mode; fingers do not move or click the pointer. Pencil activity takes priority, and resting fingers must lift before another scroll gesture can start.
+- Two fingers scroll in either mode. Finger Trackpad also enables one-finger pointing, tapping and dragging in Trackpad mode. Pencil contact takes priority, and resting fingers must lift before another finger gesture can start.
 - Scrolling includes momentum, independent axis reversal and adjustable speed. Its response is custom tuning, not a reproduction of Apple's private trackpad algorithm.
 
 ## Drawing

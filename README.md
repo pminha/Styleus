@@ -2,7 +2,7 @@
 
 Use an iPad and Apple Pencil as a trackpad or annotation tablet for your Mac.
 
-Styleus runs as two native apps: one on the iPad, one on the Mac. Move and click with the Pencil, scroll with two fingers, and connect over USB-C or local Wi-Fi.
+Styleus runs as two native apps, one on the iPad and one on the Mac. Point with the Pencil or a finger, scroll with two fingers, and connect over USB-C or local Wi-Fi.
 
 I built it for two things: replacing everyday trackpad use with my iPad and Pencil, and making it easier to read and annotate papers in Zotero on my Mac. Trackpad mode handles pointing, clicking, dragging and scrolling; Drawing tablet mode lets me write directly over a selected area of the PDF.
 
@@ -26,7 +26,7 @@ Slide the Pencil to move the pointer. Lift and reposition it when you run out of
 
 Hold Command, Shift, Option or Control on the **Mac keyboard** to use it with a Pencil click or drag. Settings has separate pointer and scrolling speeds, a pressure threshold, and a direction switch for each scrolling axis.
 
-One finger does not move or click the pointer. Pencil contact takes priority over finger gestures; lift the Pencil and any resting fingers before starting a new scroll or pinch.
+For finger control, turn on **Settings → Trackpad → Finger Trackpad**. Slide one finger to point, tap to click, or tap twice to double-click. To drag, tap twice and hold the second touch, then slide. Lift to release. This option starts off and applies only in Trackpad mode. The Pencil takes over on contact. Lift any resting fingers before starting another finger gesture.
 
 ### Paper annotation
 
@@ -46,7 +46,7 @@ Zoom is built into Styleus, with no separate helper to install. It uses undocume
 
 You'll need:
 
-- An iPad with a compatible Apple Pencil. Hover is not required.
+- An iPad for finger control, or an iPad and a compatible Apple Pencil for Pencil gestures and annotation.
 - A Mac with Xcode and Python 3.
 - A free Apple Account for signing your own copy.
 - A USB data cable for device setup and wired use.
@@ -104,7 +104,7 @@ zsh scripts/build.sh --check-only
 
 GitHub Actions runs the Swift and setup-helper tests on pushes to `main` and pull requests. These checks do not build or sign the native apps, or test physical input.
 
-The last validation passed **123 Swift tests**, **14 setup-helper tests**, and all three build targets in Debug and Release. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
+The last validation passed **131 Swift tests**, **14 setup-helper tests**, and all three build targets in Debug and Release. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
 
 After adding Swift files, run `python3 scripts/generate_project.py` to update the Xcode project. Keep local signing settings, device logs and pairing material out of commits. [Source-release notes](docs/source-release.md)
 

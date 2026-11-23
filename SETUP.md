@@ -9,7 +9,7 @@ The first setup takes several steps. Afterward, the Mac app opens normally and t
 You need:
 
 - A Mac running **macOS 14 or later**, with Xcode installed and opened at least once to finish its setup.
-- An iPad running **iPadOS 17 or later**, plus a compatible Apple Pencil. Hover support is not required.
+- An iPad running **iPadOS 17 or later**. Pencil gestures and annotation also require a compatible Apple Pencil.
 - A free Apple Account signed in under **Xcode → Settings → Accounts**.
 - A USB data cable for initial device preparation and wired use. Charging-only cables will not work.
 - Python 3 for the small project/signing configuration helpers. No third-party Python or Swift package is needed.
@@ -163,9 +163,11 @@ Choose **Trackpad** from the mode menu for everyday pointer use:
 | Drag | Press more firmly while moving. Ease pressure or lift to release. |
 | Modified click/drag | Hold a modifier key on the **Mac keyboard** until the Pencil gesture finishes. |
 
-Use **two fingers together on the main surface** to scroll in either mode. Flick for a glide; a new finger or Pencil contact stops it. One finger does not move or click the pointer and cannot start scrolling. Pencil contact takes priority: after using the Pencil, lift it and all resting fingers before starting a new two-finger scroll. Three or more fingers cancel scrolling until all lift.
+Turn on **Settings → Trackpad → Finger Trackpad** to use one finger for pointing and clicking. Slide to move, tap to click, or tap twice for a double-click. To drag, tap twice near the same spot and hold the second touch, then slide and lift to release. The pointer sensitivity slider applies to both the finger and the Pencil. Finger pointing starts off and applies only in Trackpad mode.
 
-Under **Settings → Scrolling**, adjust scrolling speed independently of Pencil sensitivity, and reverse vertical or horizontal scrolling separately. With vertical reversal off, pulling down reveals text above. With horizontal reversal off, pulling right reveals content to the left. The setting descriptions explain the reversed choices. Changing scroll settings stops any ongoing glide.
+Use **two fingers together on the main surface** to scroll in either mode. Flick for a glide. Touching down again stops it without clicking. Adding a second finger releases a finger drag before scrolling or pinching. Pencil contact also releases a finger drag. Lift all resting fingers before starting a new finger gesture. Three or more fingers cancel scrolling until all lift.
+
+Under **Settings → Scrolling**, adjust scrolling speed independently of pointer sensitivity, and reverse vertical or horizontal scrolling separately. With vertical reversal off, pulling down reveals text above. With horizontal reversal off, pulling right reveals content to the left. The setting descriptions explain the reversed choices. Changing scroll settings stops any ongoing glide.
 
 Under **Settings**, adjust pointer sensitivity and **Pressure needed**. The left-edge meter is outside the movement area: it fills upward with pressure, marks the activation threshold and turns orange during a drag or stroke. The release threshold is slightly lower than the activation threshold to avoid repeated starts/stops from tiny changes. No drag stays locked across Pencil lifts. The meter reports local input, not acknowledgment from the Mac app.
 

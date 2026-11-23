@@ -172,6 +172,22 @@ struct InputState {
     }
 }
 
+enum TrackpadPointer {
+    static let tapSlop = 6.0
+
+    static func isSecondTap(at point: Point, time: TimeInterval, after previous: (point: Point, at: TimeInterval)?) -> Bool {
+        guard let previous else { return false }
+        return time >= previous.at && time - previous.at <= 0.35 &&
+            hypot(point.x - previous.point.x, point.y - previous.point.y) <= 24
+    }
+
+    static func movement(from previous: Point, to point: Point, sensitivity: Double) -> InputAction? {
+        let gain = sensitivity.isFinite ? min(max(sensitivity, 0.2), 4) : 1.5
+        let delta = Point(x: (point.x - previous.x) * gain, y: (point.y - previous.y) * gain)
+        return delta == .zero ? nil : .relative(delta)
+    }
+}
+
 /// Pencil-only contact recognition. Force controls activation, not receiving-app ink width.
 struct PencilInterpreter {
     var mode: InputMode = .trackpad
@@ -191,8 +207,6 @@ struct PencilInterpreter {
     private var dragging = false
     private var didDrag = false
     private var lastTap: (point: Point, at: TimeInterval)?
-    static let tapSlop = 6.0
-    static let doubleTapInterval: TimeInterval = 0.35
     static let longPressDuration: TimeInterval = 0.5
     var activeArea: Rect? { CoordinateMapping.fittedArea(surface: surface, targetAspect: targetAspect) }
     var active: Bool { drawing || dragging }
@@ -202,6 +216,8 @@ struct PencilInterpreter {
         PencilStatus(contact: contact && !blocked, pressure: contact && !blocked ? pressure : 0,
                      activationPressure: activationPressure)
     }
+
+    mutating func discardPendingTap() { lastTap = nil }
 
     mutating func begin(_ point: Point, pressure: Double = 0, at time: TimeInterval = ProcessInfo.processInfo.systemUptime) -> [InputAction] {
         guard point.isFinite, time.isFinite, !contact else { return [] }
@@ -229,17 +245,17 @@ struct PencilInterpreter {
             maxTravel = max(maxTravel, hypot(point.x - startPoint.x, point.y - startPoint.y))
             // Movement that still qualifies as a tap must not shift its click target.
             // Keep updating lastPoint so ignored wobble is never replayed on departure.
-            guard maxTravel > Self.tapSlop else { return [] }
+            guard maxTravel > TrackpadPointer.tapSlop else { return [] }
             lastTap = nil
             var actions: [InputAction] = []
             if dragging && self.pressure <= releasePressure {
                 dragging = false; actions.append(.drag(false))
-            } else if !dragging && self.pressure >= activationPressure && maxTravel > Self.tapSlop {
+            } else if !dragging && self.pressure >= activationPressure {
                 dragging = true; didDrag = true; actions.append(.drag(true))
             }
-            let gain = sensitivity.isFinite ? min(max(sensitivity, 0.2), 4) : 1.5
-            let delta = Point(x: (point.x - previous.x) * gain, y: (point.y - previous.y) * gain)
-            if delta != .zero { actions.append(.relative(delta)) }
+            if let movement = TrackpadPointer.movement(from: previous, to: point, sensitivity: sensitivity) {
+                actions.append(movement)
+            }
             return actions
         }
         guard let area = activeArea, let p = CoordinateMapping.normalized(point, in: area) else {
@@ -263,14 +279,12 @@ struct PencilInterpreter {
 
     mutating func end(at time: TimeInterval = ProcessInfo.processInfo.systemUptime) -> [InputAction] {
         var effects: [InputAction] = drawing ? [.strokeEnd] : dragging ? [.drag(false)] : []
-        if contact, !blocked, mode == .trackpad, !didDrag, maxTravel <= Self.tapSlop,
+        if contact, !blocked, mode == .trackpad, !didDrag, maxTravel <= TrackpadPointer.tapSlop,
            time.isFinite, time >= lastSampleAt, let point = lastPoint {
             if time - beganAt >= Self.longPressDuration {
                 effects.append(.click(.right, 1)); lastTap = nil
             } else {
-                let doubleTap = lastTap.map {
-                    time >= $0.at && time - $0.at <= Self.doubleTapInterval && hypot(point.x - $0.point.x, point.y - $0.point.y) <= 24
-                } ?? false
+                let doubleTap = TrackpadPointer.isSecondTap(at: point, time: time, after: lastTap)
                 effects.append(.click(.left, doubleTap ? 2 : 1))
                 lastTap = doubleTap ? nil : (point, time)
             }
