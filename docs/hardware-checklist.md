@@ -26,13 +26,15 @@ Use disposable files, a blank test note or a harmless window. Run this checklist
 
 - [ ] Enable **Settings → Trackpad → Finger Trackpad**. Slide one finger, lift, and reposition it. Tap a small target, then double-tap it. Check that tap wobble keeps the pointer still.
 - [ ] Tap twice on a window title bar and hold the second touch. Move the window, then lift to release. Repeat and add a second finger, touch with the Pencil, or open Settings mid-drag. The mouse button should release each time.
+- [ ] Position the pointer on a harmless target. Tap it with two fingers, landing and lifting them slightly apart in time. One context menu should open at the pointer when the last finger lifts. Repeat with a scroll, a pinch, and a touch to stop a glide. Each should finish without opening a menu.
+- [ ] Place three fingers on the surface and slide to drag a window. Check for a smooth start at the current pointer and a drop on the first lift. Repeat with a fourth finger, Pencil contact and a mode change mid-drag. Moving the fingers left on the screen should produce no further drag, click or scroll.
 - [ ] Scroll or pinch with two fingers, lift just one, and move the remaining finger. The pointer should stay still until a fresh single touch. Touch a glide to stop it and check for an accidental click.
 - [ ] In Drawing tablet mode, rest one finger, move it and lift it. A fresh Pencil contact should still position the pointer and draw. Switch back to Trackpad to use finger pointing again.
 
 ## Two-finger scrolling
 
 - [ ] Slide two fingers vertically/horizontally in both modes. The pointer stays still; one finger alone does not scroll.
-- [ ] Lift/re-add a finger without jumps. A third finger cancels until all fingers lift.
+- [ ] Lift/re-add a finger without jumps. Add a third finger during an active scroll. Scrolling should cancel and dragging should require a fresh gesture.
 - [ ] Compare slow slides and fast swipes, then different Scrolling speed settings.
 - [ ] Flip each reversal setting independently. With reversal off, pulling down reveals text above and pulling right reveals content to the left.
 - [ ] Flick and lift for a smooth glide. Touch with one finger or the Pencil to stop. Pause before lifting and verify no large residual glide.

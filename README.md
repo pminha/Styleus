@@ -26,7 +26,7 @@ Slide the Pencil to move the pointer. Lift and reposition it when you run out of
 
 Hold Command, Shift, Option or Control on the **Mac keyboard** to use it with a Pencil click or drag. Settings has separate pointer and scrolling speeds, a pressure threshold, and a direction switch for each scrolling axis.
 
-For finger control, turn on **Settings → Trackpad → Finger Trackpad**. Slide one finger to point, tap to click, or tap twice to double-click. To drag, tap twice and hold the second touch, then slide. Lift to release. This option starts off and applies only in Trackpad mode. The Pencil takes over on contact. Lift any resting fingers before starting another finger gesture.
+For finger control, turn on **Settings → Trackpad → Finger Trackpad**. Slide one finger to point, tap to click, or tap twice to double-click. **Tap once with two fingers to right-click. Slide three fingers together to drag and lift any one to drop.** You can also drag by double-tapping and holding with one finger. This option starts off and applies only in Trackpad mode. The Pencil takes over on contact. Lift any resting fingers before starting another finger gesture.
 
 ### Paper annotation
 
@@ -104,7 +104,7 @@ zsh scripts/build.sh --check-only
 
 GitHub Actions runs the Swift and setup-helper tests on pushes to `main` and pull requests. These checks do not build or sign the native apps, or test physical input.
 
-The last validation passed **131 Swift tests**, **14 setup-helper tests**, and all three build targets in Debug and Release. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
+The last validation passed **140 Swift tests**, **14 setup-helper tests**, and all three build targets in Debug and Release. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
 
 After adding Swift files, run `python3 scripts/generate_project.py` to update the Xcode project. Keep local signing settings, device logs and pairing material out of commits. [Source-release notes](docs/source-release.md)
 

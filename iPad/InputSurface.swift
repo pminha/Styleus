@@ -84,6 +84,12 @@ final class PencilInputView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     deinit { displayLink?.invalidate() }
 
+    override var canBecomeFirstResponder: Bool { enabled && fingerTrackpadEnabled }
+    // Keep iPadOS text-editing gestures off the trackpad surface.
+    override var editingInteractionConfiguration: UIEditingInteractionConfiguration {
+        fingerTrackpadEnabled ? .none : super.editingInteractionConfiguration
+    }
+
     func shutdown() { interrupt(); displayLink?.invalidate(); displayLink = nil }
 
     func configure(mode: InputMode, sensitivity: Double, pressureThreshold: Double,
@@ -113,10 +119,11 @@ final class PencilInputView: UIView {
         } else {
             accessibilityLabel = pinchZoomEnabled ? "Pencil, two-finger scroll, and pinch zoom area" : "Pencil and two-finger scroll area"
         }
-        accessibilityHint = (allowFingerPointer ? "Slide one finger to point, tap to click, or double-tap and hold to drag. " : "") +
+        accessibilityHint = (allowFingerPointer ? "Slide one finger to point. Tap one finger to click or two fingers to right-click. Slide three fingers to drag, or double-tap and hold with one finger. " : "") +
             (pinchZoomEnabled ? "Slide two fingers to scroll or pinch to zoom. " : "Slide two fingers to scroll. ") +
             "Trackpad: tap the Pencil to click, tap twice to double-click, hold then lift to right-click, press firmly while moving to drag. Drawing: press to draw."
         self.revision = revision; self.enabled = enabled
+        if isFirstResponder && !canBecomeFirstResponder { resignFirstResponder() }
         updateFeedback()
         setNeedsDisplay()
     }
@@ -197,12 +204,21 @@ final class PencilInputView: UIView {
         return Double(touch.force / touch.maximumPossibleForce)
     }
 
-    private func updateDirectTouches(_ touches: Set<UITouch>, removing: Bool = false) {
+    @discardableResult
+    private func updateDirectTouches(_ touches: Set<UITouch>, removing: Bool = false) -> Bool {
+        var changed = false
         for touch in touches where touch.type == .direct {
             let id = ObjectIdentifier(touch)
             if removing { directTouches.removeValue(forKey: id) }
-            else if touch.phase == .began || directTouches[id] != nil { directTouches[id] = point(touch) }
+            else if touch.phase == .began || directTouches[id] != nil {
+                let position = point(touch)
+                if directTouches[id] != position {
+                    directTouches[id] = position
+                    changed = true
+                }
+            }
         }
+        return changed
     }
 
     private func updateScroll(at now: TimeInterval) {
@@ -210,8 +226,9 @@ final class PencilInputView: UIView {
         let update = scroll.update(directTouches, at: now, pencilDown: activePencil != nil)
         guard enabled else { _ = scroll.interrupt(); _ = motion.cancel(); displayLink?.isPaused = true; return }
         if (!wasActive && scroll.active) || update.zoomSamples.contains(where: { $0.phase == .began }) {
-            // A finger gesture between Pencil taps must break the double-click
-            // chain before its first scroll or zoom event reaches the Mac.
+            // Once navigation wins, lifting must not click and a third finger
+            // must not convert the same gesture into a drag.
+            interruptFinger()
             emit(interpreter.interrupt())
         }
         update.scrollDeltas.forEach { motion.move($0, at: now) }
@@ -229,6 +246,7 @@ final class PencilInputView: UIView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let stopped = motion.cancel()
         emitScroll(stopped)
+        let onEmptySurface = directTouches.isEmpty
         updateDirectTouches(touches)
         if activePencil == nil, let touch = touches.first(where: { $0.type == .pencil }) {
             // End native magnification before Pencil begin can position or press
@@ -242,12 +260,13 @@ final class PencilInputView: UIView {
             }
         } else if enabled, fingerTrackpadEnabled, activePencil == nil,
                   let touch = touches.first(where: { $0.type == .direct }) {
+            if onEmptySurface && !isFirstResponder { becomeFirstResponder() }
             if stopped.contains(where: { $0.phase == .momentumEnded }) {
                 // A touch that brakes a flick must not also click on lift.
                 interruptFinger()
             } else {
-                send(finger.begin(directTouches, at: touch.timestamp))
-                if finger.activeTouch != nil { interpreter.discardPendingTap() }
+                send(finger.begin(directTouches, at: event?.timestamp ?? touch.timestamp, onEmptySurface: onEmptySurface))
+                interpreter.discardPendingTap()
                 scheduleFingerHold()
             }
         }
@@ -255,6 +274,7 @@ final class PencilInputView: UIView {
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let now = event?.timestamp ?? CACurrentMediaTime()
         updateDirectTouches(touches)
         if enabled, let touch = touches.first(where: { ObjectIdentifier($0) == activePencil }) {
             // Never replay predicted or late corrected samples into another app's committed input.
@@ -266,21 +286,29 @@ final class PencilInputView: UIView {
             for sample in event?.coalescedTouches(for: touch) ?? [touch] {
                 send(finger.move(to: point(sample), at: sample.timestamp))
             }
+        } else if enabled, fingerTrackpadEnabled, activePencil == nil {
+            send(finger.moveGroup(directTouches, at: now))
         }
-        updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
+        updateScroll(at: now)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let now = event?.timestamp ?? touches.first?.timestamp ?? CACurrentMediaTime()
+        let fingerLift = enabled && fingerTrackpadEnabled && activePencil == nil && touches.contains { $0.type == .direct }
+        // UIKit can deliver the final travel on lift. Let scroll or pinch claim
+        // that movement before deciding whether these two touches were a tap.
+        if fingerLift, updateDirectTouches(touches), directTouches.count == 2 { updateScroll(at: now) }
+        let finalPositions = directTouches
         updateDirectTouches(touches, removing: true)
         if let touch = touches.first(where: { ObjectIdentifier($0) == activePencil }) {
             if enabled { emit(interpreter.move(point(touch), pressure: pressure(touch), at: touch.timestamp)) }
             emit(interpreter.end(at: touch.timestamp))
             activePencil = nil; pencilDot.isHidden = true
-        } else if let id = finger.activeTouch, let touch = touches.first(where: { ObjectIdentifier($0) == id }) {
+        } else if fingerLift {
             cancelFingerHold()
-            send(finger.end(at: point(touch), time: touch.timestamp))
+            send(finger.end(finalPositions, remaining: directTouches.count, at: now))
         }
-        updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
+        updateScroll(at: now)
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -322,7 +350,7 @@ final class PencilInputView: UIView {
         } else if interpreter.mode == .drawing {
             text = "Light Pencil touch positions the pointer\nPress to draw · ease pressure or lift to end\n\(fingerHint)"
         } else if fingerTrackpadEnabled {
-            text = "Slide one finger or the Pencil to point · tap to click\nDouble-tap and hold with a finger to drag\n\(fingerHint)"
+            text = "Slide one finger to point · tap to click\nTap two fingers to right-click · slide three to drag\n\(fingerHint)"
         } else {
             text = "Pencil: tap to click · tap twice to double-click\nHold, then lift to right-click · press while moving to drag\n\(fingerHint)"
         }

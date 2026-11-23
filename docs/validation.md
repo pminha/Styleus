@@ -6,10 +6,10 @@ This report distinguishes automated checks from physical observations. It exclud
 
 The native iPad app, generic iPad simulator target and native Mac companion have built successfully in the recorded [build environment](environment.md). The simulator build was compiled only; no simulator execution is claimed.
 
-The shared Swift suite currently contains **131 tests**. Coverage includes the following areas.
+The shared Swift suite currently contains **140 tests**. Coverage includes the following areas.
 
 - Relative anchoring, stable taps, tap/double-tap/hold recognition, pressure activation and hysteresis.
-- Finger Trackpad relative movement, tap counting, second-touch hold and drag, release on lift, and interruption by a second finger.
+- Finger Trackpad relative movement, tap counting, one- and three-finger dragging, two-finger secondary clicks, staggered lifts and interruption by an additional contact.
 - Absolute aspect-fit mapping, display/region coordinates, negative display origins, invalid coordinates, separate strokes and margin handling.
 - Mode/cancellation releases, stale samples, session/sequence/geometry rejection, expiring leases and clean reconnects.
 - Two-finger recognition, palm/finger-change handling, fractional scrolling, speed-dependent gain, momentum, phase handling and independent direction settings.
@@ -22,7 +22,7 @@ Run `zsh scripts/test.sh` to reproduce the host suite. Configuration-helper test
 
 In a host replay of 500,000 frames of 269 bytes each, the decoder process used less than 7 MiB of resident memory at the end of both the whole-frame and fragmented runs. The previous whole-frame run reached 136 MiB. In a simulated ten-second pause after a two-finger scroll at 120 Hz, the scroll model requested zero further display callbacks, down from 1,200. These measurements cover the decoder and scroll model on the Mac host.
 
-A Mac Catalyst check replayed synthetic finger and Pencil touches through the iPad input view. It verified stationary hold-to-drag, release on Pencil or second-finger contact, two-finger scrolling and pinch, and tapping to stop a glide without clicking. The [hardware checklist](hardware-checklist.md#finger-trackpad) covers how those gestures feel on an iPad.
+A Mac Catalyst check replayed synthetic touches through the iPad input view. A two-finger tap produced one right click on the last lift. Scrolling, pinching and tapping to stop a glide each finished without a click. A three-finger drag released on the first lift, a fourth finger, Pencil contact, touch cancellation or disabling Finger Trackpad. The replay also covered one-finger hold-to-drag and Pencil input. Touchscreen feel is a separate check. [Hardware checklist](hardware-checklist.md#finger-trackpad)
 
 ## Physical observations
 

@@ -163,9 +163,9 @@ Choose **Trackpad** from the mode menu for everyday pointer use:
 | Drag | Press more firmly while moving. Ease pressure or lift to release. |
 | Modified click/drag | Hold a modifier key on the **Mac keyboard** until the Pencil gesture finishes. |
 
-Turn on **Settings → Trackpad → Finger Trackpad** to use one finger for pointing and clicking. Slide to move, tap to click, or tap twice for a double-click. To drag, tap twice near the same spot and hold the second touch, then slide and lift to release. The pointer sensitivity slider applies to both the finger and the Pencil. Finger pointing starts off and applies only in Trackpad mode.
+Turn on **Settings → Trackpad → Finger Trackpad** for finger pointing. Slide one finger to move, tap to click, or tap twice for a double-click. Tap once with two fingers and lift both to right-click at the current pointer. To drag, place three fingers on the surface, slide them together, and lift any finger to drop. You can also double-tap and hold with one finger to drag. The pointer sensitivity slider applies to finger and Pencil movement. Finger Trackpad starts off and applies only in Trackpad mode.
 
-Use **two fingers together on the main surface** to scroll in either mode. Flick for a glide. Touching down again stops it without clicking. Adding a second finger releases a finger drag before scrolling or pinching. Pencil contact also releases a finger drag. Lift all resting fingers before starting a new finger gesture. Three or more fingers cancel scrolling until all lift.
+Use **two fingers together on the main surface** to scroll in either mode. Flick for a glide and touch down again to stop it. Once scrolling or pinching begins, adding a third finger cancels that gesture. Lift all fingers before starting a three-finger drag. Adding a second finger releases a one-finger drag. Pencil contact releases either type of finger drag.
 
 Under **Settings → Scrolling**, adjust scrolling speed independently of pointer sensitivity, and reverse vertical or horizontal scrolling separately. With vertical reversal off, pulling down reveals text above. With horizontal reversal off, pulling right reveals content to the left. The setting descriptions explain the reversed choices. Changing scroll settings stops any ongoing glide.
 

@@ -92,7 +92,7 @@ struct PadContentView: View {
                         Slider(value: $sensitivity, in: 0.2...4, step: 0.1)
                         Text("Use Apple Pencil to move the pointer. Tap for a left click, tap twice quickly for a double click, or hold still for half a second and lift for a right click. Press more firmly while moving to drag. Easing pressure or lifting releases the drag.")
                         Toggle("Finger Trackpad", isOn: $fingerTrackpad)
-                        Text("In Trackpad mode, slide one finger to move the pointer or tap to click. To drag, tap twice, hold the second touch and slide. Lift to release.")
+                        Text("Slide one finger to point. Tap with one finger to click or with two fingers to right-click. Slide three fingers to drag and lift a finger to drop. You can also double-tap and hold with one finger to drag.")
                         Text("Slide two fingers to scroll in either mode. Touch again to stop a glide. The Pencil takes over when it touches down. Lift all resting fingers before starting another finger gesture.")
                     }
                     Section("Scrolling") {

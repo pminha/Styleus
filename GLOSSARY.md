@@ -9,7 +9,7 @@ A mode in which Pencil movement, or finger movement with Finger Trackpad enabled
 _Avoid_: Absolute mode, tablet mode
 
 **Finger Trackpad**:
-An optional Trackpad mode setting for pointing, clicking and dragging with one finger. Two fingers control scrolling and pinch zoom.
+An optional Trackpad mode setting for finger input. One finger points, clicks or drags. A two-finger tap right-clicks, a two-finger slide scrolls, a pinch zooms when enabled, and a three-finger slide drags.
 
 **Drawing-tablet mode**:
 A mode in which each location in the active drawing area corresponds to a fixed location in a target region on the Mac.
