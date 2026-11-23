@@ -8,6 +8,7 @@ final class PencilFeedbackRelay {
     private weak var view: PencilPressureView?
 
     func update(_ value: PencilFeedbackPresentation) {
+        guard latest != value else { return }
         latest = value
         view?.presentation = value
     }

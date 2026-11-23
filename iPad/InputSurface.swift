@@ -37,7 +37,11 @@ private final class ScrollFrameTarget: NSObject {
 final class PencilInputView: UIView {
     var onAction: ((InputAction) -> Void)?
     var onStatus: ((PencilStatus) -> Void)?
-    weak var feedback: PencilFeedbackRelay?
+    weak var feedback: PencilFeedbackRelay? {
+        didSet {
+            if feedback !== oldValue { updateFeedback() }
+        }
+    }
     private var interpreter = PencilInterpreter()
     private var scroll = TwoFingerGestureInterpreter<ObjectIdentifier>()
     private var motion = ScrollMotion()
@@ -46,12 +50,22 @@ final class PencilInputView: UIView {
     private var enabled = false
     private var revision: UInt64 = 0
     private var activePencil: ObjectIdentifier?
-    private var dot: CGPoint?
+    private let pencilDot = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))
+    private var feedbackPhase = PencilFeedbackPresentation.Phase.paused
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         isMultipleTouchEnabled = true
         isOpaque = true
+        pencilDot.isUserInteractionEnabled = false
+        pencilDot.isHidden = true
+        pencilDot.backgroundColor = .systemBlue
+        pencilDot.alpha = 0.6
+        pencilDot.layer.cornerRadius = 5
+        addSubview(pencilDot)
+        registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitAccessibilityContrast.self]) { (view: PencilInputView, _) in
+            view.setNeedsDisplay()
+        }
         accessibilityLabel = "Pencil and two-finger scroll area"
         accessibilityHint = "Slide two fingers to scroll. Trackpad: tap the Pencil to click, tap twice to double-click, hold then lift to right-click, press firmly while moving to drag. Drawing: press to draw."
         let target = ScrollFrameTarget()
@@ -71,15 +85,15 @@ final class PencilInputView: UIView {
                    reverseVerticalScroll: Bool, reverseHorizontalScroll: Bool, scrollSensitivity: Double,
                    pinchZoomEnabled: Bool, aspect: Double,
                    revision: UInt64, enabled: Bool) {
-        if interpreter.mode != mode || interpreter.targetAspect != aspect ||
+        interpreter.sensitivity = sensitivity
+        guard interpreter.mode != mode || interpreter.targetAspect != aspect ||
             interpreter.pressureThreshold != pressureThreshold || scroll.reverseVertical != reverseVerticalScroll ||
             scroll.reverseHorizontal != reverseHorizontalScroll ||
             scroll.sensitivity != scrollSensitivity ||
             scroll.pinchZoomEnabled != pinchZoomEnabled ||
-            self.revision != revision || self.enabled != enabled {
-            interrupt(send: false)
-        }
-        interpreter.mode = mode; interpreter.sensitivity = sensitivity
+            self.revision != revision || self.enabled != enabled else { return }
+        interrupt(send: false)
+        interpreter.mode = mode
         interpreter.pressureThreshold = pressureThreshold; interpreter.targetAspect = aspect
         scroll.reverseVertical = reverseVerticalScroll
         scroll.reverseHorizontal = reverseHorizontalScroll
@@ -106,8 +120,7 @@ final class PencilInputView: UIView {
         displayLink?.isPaused = true
         updateFeedback()
         if send { emitScroll(endScroll); emitZoom(endZoom); emit(actions) }
-        dot = nil
-        setNeedsDisplay()
+        pencilDot.isHidden = true
     }
 
     private func emit(_ actions: [InputAction]) {
@@ -116,7 +129,19 @@ final class PencilInputView: UIView {
         actions.forEach { onAction?($0) }
     }
     private func updateFeedback() {
-        feedback?.update(PencilFeedbackPresentation(interpreter, enabled: enabled))
+        let presentation = PencilFeedbackPresentation(interpreter, enabled: enabled)
+        feedback?.update(presentation)
+        if feedbackPhase != presentation.phase {
+            feedbackPhase = presentation.phase
+            pencilDot.backgroundColor = presentation.held ? .systemOrange : .systemBlue
+            setNeedsDisplay()
+        }
+    }
+    private func positionDot(for touch: UITouch) {
+        UIView.performWithoutAnimation {
+            pencilDot.center = touch.preciseLocation(in: self)
+            pencilDot.isHidden = false
+        }
     }
     private func emitScroll(_ samples: [ScrollSample]) { emit(samples.map(InputAction.scroll)) }
     private func emitZoom(_ samples: [ZoomSample]) { emit(samples.map(InputAction.zoom)) }
@@ -174,11 +199,10 @@ final class PencilInputView: UIView {
             activePencil = ObjectIdentifier(touch)
             if enabled {
                 emit(interpreter.begin(point(touch), pressure: pressure(touch), at: touch.timestamp))
-                dot = touch.preciseLocation(in: self)
+                positionDot(for: touch)
             }
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
-        setNeedsDisplay()
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -188,20 +212,19 @@ final class PencilInputView: UIView {
             for sample in event?.coalescedTouches(for: touch) ?? [touch] {
                 emit(interpreter.move(point(sample), pressure: pressure(sample), at: sample.timestamp))
             }
-            dot = touch.preciseLocation(in: self)
+            positionDot(for: touch)
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
-        if activePencil != nil { setNeedsDisplay() }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         updateDirectTouches(touches, removing: true)
         if let touch = touches.first(where: { ObjectIdentifier($0) == activePencil }) {
             if enabled { emit(interpreter.move(point(touch), pressure: pressure(touch), at: touch.timestamp)) }
-            emit(interpreter.end(at: touch.timestamp)); activePencil = nil; dot = nil
+            emit(interpreter.end(at: touch.timestamp))
+            activePencil = nil; pencilDot.isHidden = true
         }
         updateScroll(at: event?.timestamp ?? CACurrentMediaTime())
-        setNeedsDisplay()
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -243,9 +266,5 @@ final class PencilInputView: UIView {
         (text as NSString).draw(in: CGRect(x: area.minX + 16, y: area.midY - 40, width: max(0, area.width - 32), height: 100),
                                withAttributes: [.font: UIFont.systemFont(ofSize: 18, weight: .medium),
                                                 .foregroundColor: UIColor.secondaryLabel, .paragraphStyle: style])
-        if let dot, enabled {
-            (interpreter.active ? UIColor.systemOrange : UIColor.systemBlue).withAlphaComponent(0.6).setFill()
-            UIBezierPath(ovalIn: CGRect(x: dot.x - 5, y: dot.y - 5, width: 10, height: 10)).fill()
-        }
     }
 }

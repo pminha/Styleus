@@ -178,7 +178,8 @@ class ScriptUsageTests(unittest.TestCase):
         return subprocess.run(["zsh", str(SCRIPTS / name), *arguments], capture_output=True, text=True)
 
     def test_installer_requires_exactly_one_explicit_device(self):
-        for arguments in ((), ("first", "second"), ("",), ("--unknown",)):
+        for arguments in ((), ("first", "second"), ("",), ("--unknown",),
+                          ("--release",), ("--release", "--unknown"), ("--release", "first", "second")):
             with self.subTest(arguments=arguments):
                 result = self.run_script("install-ipad.sh", *arguments)
                 self.assertEqual(result.returncode, 2)
@@ -189,6 +190,7 @@ class ScriptUsageTests(unittest.TestCase):
             result = self.run_script(script, "--help")
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("Usage:", result.stdout)
+            self.assertIn("--release", result.stdout)
 
     def test_build_rejects_unknown_options(self):
         result = self.run_script("build.sh", "--unknown")

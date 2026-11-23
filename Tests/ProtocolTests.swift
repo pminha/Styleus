@@ -71,6 +71,22 @@ final class ProtocolTests: XCTestCase {
         XCTAssertThrowsError(try decoder.append(Data([0x7f, 0xff, 0xff, 0xff])))
     }
 
+    func testLongStreamPreservesPartialHeaderAndBodyAcrossCompaction() throws {
+        let probe = TimingProbe(session: UUID(), nonce: UUID())
+        let ping = try FrameDecoder.encode(.ping(probe))
+        let pong = try FrameDecoder.encode(.pong(probe))
+        let body = Data(ping.dropFirst(4))
+        for split in [2, ping.count - 1] {
+            var decoder = FrameDecoder()
+            XCTAssertTrue(try decoder.append(ping.prefix(split)).isEmpty)
+            let chunk = ping.dropFirst(split) + ping.prefix(split)
+            for _ in 0...(FrameDecoder.limit / ping.count) {
+                XCTAssertEqual(try decoder.append(chunk), [body])
+            }
+            XCTAssertEqual(try decoder.append(ping.dropFirst(split) + pong), [body, Data(pong.dropFirst(4))])
+        }
+    }
+
     func testHighEntropyPairingRoundtripAndMalformedInputs() throws {
         let pair = try PairingCredential.create()
         XCTAssertEqual(pair.secret.count, 32)

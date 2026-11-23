@@ -70,6 +70,8 @@ zsh scripts/build.sh
 
 This builds the Mac app and compiles unsigned iPad device and simulator variants. Logs are saved under `build/`. On success, open **`dist/Styleus Mac.app`** in Finder. Keep this folder in a stable location and always open this copy. It avoids confusion between the installed companion and temporary Xcode build copies.
 
+Both scripts default to Debug, which includes connection logging. Use `zsh scripts/build.sh --release` for an optimized build, or add `--check-only` for a compile check.
+
 Alternatively, choose the **StyleusMac** scheme and **My Mac** destination in Xcode, then Run. Use the script's stable `dist/` copy for everyday use and give Accessibility permission to that final copy.
 
 In the companion, choose **Open Accessibility Settings**. Under **System Settings → Privacy & Security → Accessibility**, add and enable the exact app you built. This authorizes pointer movement, clicks, drags and scrolling. Styleus does not need Screen Recording or Input Monitoring permission. [Apple's Accessibility guide](https://support.apple.com/guide/mac-help/allow-accessibility-apps-to-access-your-mac-mh43185/mac)
@@ -103,6 +105,8 @@ zsh scripts/install-ipad.sh 'YOUR_DEVICE_IDENTIFIER_OR_NAME'
 ```
 
 Replace the quoted argument with your iPad's identifier or name from the device list. Keep it connected and unlocked. The device identifier is usually less ambiguous than a name. If the script cannot prepare or sign the app, open Xcode and resolve the reported issue there rather than repeatedly retrying.
+
+For a signed Release upgrade, use `zsh scripts/install-ipad.sh --release 'YOUR_DEVICE_IDENTIFIER_OR_NAME'` with the same signing configuration and existing installation. Open the app from its icon, reconnect using the saved pairing, and check pointer movement against the Release Mac companion.
 
 ## 5. Pair and connect
 

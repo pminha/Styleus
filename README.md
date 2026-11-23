@@ -104,7 +104,7 @@ zsh scripts/build.sh --check-only
 
 GitHub Actions runs the Swift and setup-helper tests on pushes to `main` and pull requests. These checks do not build or sign the native apps, or test physical input.
 
-The last validation passed **121 Swift tests**, **14 setup-helper tests**, and all three build targets. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
+The last validation passed **123 Swift tests**, **14 setup-helper tests**, and all three build targets in Debug and Release. Physical testing has covered Pencil clicks and dragging, modifier keys, two-finger scrolling, Zotero annotation, and basic browser pinch zoom. That is not a compatibility guarantee for every app or device. See the [validation record](docs/validation.md) and [hardware checklist](docs/hardware-checklist.md).
 
 After adding Swift files, run `python3 scripts/generate_project.py` to update the Xcode project. Keep local signing settings, device logs and pairing material out of commits. [Source-release notes](docs/source-release.md)
 

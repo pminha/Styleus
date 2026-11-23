@@ -160,7 +160,7 @@ struct ScrollMotion {
     private var releasedAt: TimeInterval = 0
     private var previousFrame: TimeInterval = 0
     private var momentumStartedAt: TimeInterval = 0
-    var needsFrames: Bool { state == .contact || state == .momentum }
+    var needsFrames: Bool { (state == .contact && pending != .zero) || state == .momentum }
 
     mutating func move(_ delta: Point, at now: TimeInterval) {
         guard delta.isFinite, abs(delta.x) <= ScrollSample.maximumDelta, abs(delta.y) <= ScrollSample.maximumDelta, now.isFinite else { return }

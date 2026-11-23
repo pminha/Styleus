@@ -206,7 +206,9 @@ final class MacModel: ObservableObject {
                 self.release(); return
             }
             if case .zoom = packet.action, !self.output.zoomAvailable { self.release(); return }
-            self.engine.syncCursor(self.output.location)
+            if self.engine.needsCursorLocation(for: packet.action) {
+                self.engine.syncCursor(self.output.location)
+            }
             let postedLocation = self.output.post(self.engine.apply(packet.action))
             switch packet.action {
             case .cancel, .mode: self.cursorIndicator.clear()

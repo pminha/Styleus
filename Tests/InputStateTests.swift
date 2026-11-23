@@ -2,6 +2,26 @@ import XCTest
 @testable import StyleusCore
 
 final class InputStateTests: XCTestCase {
+    func testLiveCursorReadsFollowUnheldTrackpadActions() {
+        var state = InputState()
+        let relative = InputAction.relative(Point(x: 2, y: 3))
+        for action in [relative, .click(.left, 1), .drag(true)] {
+            XCTAssertTrue(state.needsCursorLocation(for: action))
+        }
+        for action in [InputAction.heartbeat, .cancel, .drag(false), .scroll(ScrollSample(phase: .began)),
+                       .zoom(ZoomSample(phase: .began)), .position(.zero)] {
+            XCTAssertFalse(state.needsCursorLocation(for: action))
+        }
+        _ = state.apply(.drag(true))
+        XCTAssertFalse(state.needsCursorLocation(for: relative))
+        _ = state.apply(.drag(false))
+        XCTAssertTrue(state.needsCursorLocation(for: relative))
+        _ = state.apply(.mode(.drawing))
+        XCTAssertFalse(state.needsCursorLocation(for: .strokeBegin(.zero)))
+        _ = state.apply(.strokeBegin(.zero))
+        XCTAssertFalse(state.needsCursorLocation(for: .strokeMove(.zero)))
+    }
+
     func testMovementLiftAndRepositionDoNotClickOrJump() {
         var pencil = PencilInterpreter()
         pencil.sensitivity = 2

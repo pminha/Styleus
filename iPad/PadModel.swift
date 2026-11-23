@@ -145,8 +145,10 @@ final class PadModel: ObservableObject {
             if case .pong(let probe) = message {
                 guard self.channel === channel else { return }
                 if let sample = self.timing?.accept(probe, now: ProcessInfo.processInfo.systemUptime) {
-                    self.roundTripMilliseconds = self.timing?.median
-                    self.timingSampleCount = self.timing?.milliseconds.count ?? 0
+                    let median = self.timing?.median
+                    let count = self.timing?.milliseconds.count ?? 0
+                    if self.roundTripMilliseconds != median { self.roundTripMilliseconds = median }
+                    if self.timingSampleCount != count { self.timingSampleCount = count }
                     ConnectionTrace.note(String(format: "%@ round trip %.1f ms; recent median %.1f ms (%d samples)",
                         mode.title, sample, self.roundTripMilliseconds ?? sample, self.timingSampleCount))
                 }
@@ -179,26 +181,33 @@ final class PadModel: ObservableObject {
             let changedGeometry = self.state?.geometry != received.geometry
             let permissionChanged = self.state?.inputAllowed != received.inputAllowed
             let zoomChanged = self.state?.zoomAvailable != received.zoomAvailable
+            // Every renewal supplies a fresh input lease, even when the UI is identical.
             self.state = received
             self.lastStateAt = ProcessInfo.processInfo.systemUptime
-            self.target = received.target
+            if self.target != received.target { self.target = received.target }
             if changedGeometry || permissionChanged || zoomChanged { self.inputRevision += 1 }
-            self.connected = true; self.connecting = false
-            self.connectionProgress.establish()
-            self.inputAllowed = received.inputAllowed
-            self.zoomAvailable = received.zoomAvailable
-            self.status = received.inputAllowed ? "Connected · encrypted \(mode.title)" : "Connected · enable Accessibility in the Mac app"
+            if first {
+                self.connected = true; self.connecting = false
+                self.connectionProgress.establish()
+                UIApplication.shared.isIdleTimerDisabled = true
+                self.startStatusTimer()
+            }
+            if self.inputAllowed != received.inputAllowed { self.inputAllowed = received.inputAllowed }
+            if self.zoomAvailable != received.zoomAvailable { self.zoomAvailable = received.zoomAvailable }
+            if permissionChanged {
+                self.status = received.inputAllowed ? "Connected · encrypted \(mode.title)" : "Connected · enable Accessibility in the Mac app"
+            }
             if let pending = self.pendingDrag, received.acknowledgedSequence < pending.0 {
-                self.dragActive = pending.1
+                self.updateDragActive(pending.1)
             } else {
-                self.pendingDrag = nil; self.dragActive = received.dragActive
+                self.pendingDrag = nil
+                self.updateDragActive(received.dragActive)
             }
             if first || changedGeometry || permissionChanged || zoomChanged {
                 self.send(.cancel)
                 self.send(.mode(self.mode))
             }
-            if first { self.sendTimingProbe(); self.startStatusTimer() }
-            UIApplication.shared.isIdleTimerDisabled = true
+            if first { self.sendTimingProbe() }
         }
         channel.onClose = { [weak self, weak channel] reason in
             guard let self, let channel else { return }
@@ -224,11 +233,15 @@ final class PadModel: ObservableObject {
             disconnect("Connection stalled; input stopped.", issue: .stalled); return
         }
         sequence += 1
-        if case .drag(let held) = action { pendingDrag = (sequence, held); dragActive = held }
-        if action == .cancel { pendingDrag = (sequence, false); dragActive = false }
+        if case .drag(let held) = action { pendingDrag = (sequence, held); updateDragActive(held) }
+        if action == .cancel { pendingDrag = (sequence, false); updateDragActive(false) }
         channel.send(.input(InputPacket(session: state.session, lease: state.lease, geometry: state.geometry,
                                         sequence: sequence, action: action, pencilStatus: pencilStatus.latest)))
         pencilStatus.markSent(at: now)
+    }
+
+    private func updateDragActive(_ held: Bool) {
+        if dragActive != held { dragActive = held }
     }
 
     func updatePencilStatus(_ status: PencilStatus, revision: UInt64) {

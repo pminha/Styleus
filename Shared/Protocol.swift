@@ -160,6 +160,13 @@ struct FrameDecoder {
             data.removeFirst(count + 4)
         }
         guard data.count <= Self.limit + 4 else { throw ProtocolError.invalidFrame }
+        // Data.removeFirst advances the start index but can retain consumed bytes.
+        // Periodically rebase a partial frame so long sessions use bounded storage.
+        if data.isEmpty {
+            data = Data()
+        } else if data.startIndex >= Self.limit {
+            data = data.withUnsafeBytes { Data($0) }
+        }
         return frames
     }
 

@@ -6,7 +6,7 @@ This report distinguishes automated checks from physical observations. It exclud
 
 The native iPad app, generic iPad simulator target and native Mac companion have built successfully in the recorded [build environment](environment.md). The simulator build was compiled only; no simulator execution is claimed.
 
-The shared Swift suite currently contains **121 tests**, covering:
+The shared Swift suite currently contains **123 tests**. Coverage includes the following areas.
 
 - Relative anchoring, stable taps, tap/double-tap/hold recognition, pressure activation and hysteresis.
 - Absolute aspect-fit mapping, display/region coordinates, negative display origins, invalid coordinates, separate strokes and margin handling.
@@ -18,6 +18,8 @@ The shared Swift suite currently contains **121 tests**, covering:
 - Connection headings, retained error details, permission guidance and clearing old failure messages.
 
 Run `zsh scripts/test.sh` to reproduce the host suite. Configuration-helper tests and clean source-build checks are recorded separately in the source-release check below. Test success is not proof of compatibility with every Mac app, network or device.
+
+In a host replay of 500,000 frames of 269 bytes each, the decoder process used less than 7 MiB of resident memory at the end of both the whole-frame and fragmented runs. The previous whole-frame run reached 136 MiB. In a simulated ten-second pause after a two-finger scroll at 120 Hz, the scroll model requested zero further display callbacks, down from 1,200. These measurements cover the decoder and scroll model on the Mac host.
 
 ## Physical observations
 

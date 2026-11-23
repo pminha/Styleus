@@ -40,6 +40,14 @@ struct InputState {
     var displays: [Rect] = []
     var leftHeld: Bool { dragActive || strokeActive }
 
+    func needsCursorLocation(for action: InputAction) -> Bool {
+        guard mode == .trackpad, !leftHeld else { return false }
+        switch action {
+        case .relative, .click, .drag(true): return true
+        default: return false
+        }
+    }
+
     mutating func syncCursor(_ point: Point) {
         if !leftHeld && point.isFinite { cursor = point }
     }

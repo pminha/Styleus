@@ -16,11 +16,16 @@ final class ScrollMotionTests: XCTestCase {
         var motion = ScrollMotion()
         motion.move(Point(x: 1, y: 2), at: 1)
         motion.move(Point(x: 2, y: 4), at: 1.005)
+        XCTAssertTrue(motion.needsFrames)
         XCTAssertEqual(motion.tick(at: 1.01), [ScrollSample(delta: Point(x: 3, y: 6), phase: .began)])
+        XCTAssertFalse(motion.needsFrames)
         XCTAssertEqual(motion.tick(at: 1.02), [])
-        motion.move(Point(x: -1, y: 8), at: 1.025)
-        XCTAssertEqual(motion.tick(at: 1.03), [ScrollSample(delta: Point(x: -1, y: 8), phase: .changed)])
-        XCTAssertEqual(motion.end(at: 1.2, allFingersUp: true), [ScrollSample(phase: .ended)])
+        // The fingers stay down for ten seconds with the display link paused.
+        motion.move(Point(x: -1, y: 8), at: 11.025)
+        XCTAssertTrue(motion.needsFrames)
+        XCTAssertEqual(motion.tick(at: 11.03), [ScrollSample(delta: Point(x: -1, y: 8), phase: .changed)])
+        XCTAssertFalse(motion.needsFrames)
+        XCTAssertEqual(motion.end(at: 11.2, allFingersUp: true), [ScrollSample(phase: .ended)])
         XCTAssertFalse(motion.needsFrames)
     }
 
@@ -28,6 +33,7 @@ final class ScrollMotionTests: XCTestCase {
         var motion = flick()
         XCTAssertEqual(motion.end(at: 1.025, allFingersUp: true),
                        [ScrollSample(phase: .ended), ScrollSample(phase: .momentumBegan)])
+        XCTAssertTrue(motion.needsFrames)
         var previous = Double.infinity
         var distance = 0.0
         var ended = false
